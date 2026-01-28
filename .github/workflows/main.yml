@@ -1,13 +1,15 @@
 name: GitHub Monitor Bot
 
 on:
-  workflow_dispatch:      # 允许手动点击运行（测试用）
+  workflow_dispatch:      # 允许你在 GitHub 网页上点击按钮手动运行
   schedule:
-    - cron: '0 2 * * *'  
+    - cron: '0 1 * * *'  
 
 jobs:
   run-monitor:
     runs-on: ubuntu-latest
+    permissions:          # 显式声明权限，确保能写回 CSV
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -22,9 +24,9 @@ jobs:
 
       - name: Run Monitor Script
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 使用内置Token
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }} # 这个需要去Settings填
-        run: python monitor.py
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 使用内置 Token
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }} # 需在 Settings 填入
+        run: python main.py  # <--- 这里已经帮你改成了 main.py
 
       - name: Save Data Changes
         run: |
