@@ -189,7 +189,7 @@ def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_o
                           "elements": [{"tag": "markdown", "content": "**<font color='orange'>非主流组</font>**"}, {"tag": "markdown", "content": other_md}]}
                      ]},
                     {"tag": "markdown", "content": f"🔄 **本次共有 {update_count} 个已知项目更新了数据**"},
-                    {"tag": "markdown", "content" : sync_content},
+                    {"tag": "markdown", "content" : "手动@ZHY，记得更新一下多维表格哈～"},
                     {"tag": "markdown", "content": f"📝 **更新摘要：**\n{log_preview}"},
                     {"tag": "hr"},
                     {"tag": "markdown", "content": f"<font color='grey' size='small'>📊 累计监控：主流 {total_major} | 非主流 {total_other}\n📅 监控时刻：{get_now_bj()}</font>"}
