@@ -89,3 +89,13 @@
 变更：jdrhyne/agent-skills | ★ 134 -> 138 | 内容更新
 --- 2026-01-28 23:08:36 ---
 
+[Major]
+新增：staruhub/ClaudeSkills (★113)
+新增：maxvaega/skillkit (★110)
+新增：tech-shrimp/agent-skills-examples (★101)
+[Other]
+新增：GBSOSS/-mcp-to-skill-converter (★112)
+新增：wlzh/skills (★107)
+新增：jthack/ffuf_claude_skill (★102)
+--- 2026-01-28 23:25:24 ---
+
