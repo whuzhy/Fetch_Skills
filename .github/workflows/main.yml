@@ -2,7 +2,7 @@ name: GitHub Python Repo Monitor
 
 on:
   schedule:
-    - cron: '0 1 * * *' # 北京时间 09:00 (UTC 01:00)
+    - cron: '0 2 * * *' # 北京时间 10:00
   workflow_dispatch:
 
 # 必须显式声明权限，否则 git push 会报 403 错误
