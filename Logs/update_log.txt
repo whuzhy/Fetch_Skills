@@ -47,3 +47,45 @@
 变更：op7418/NanoBanana-PPT-Skills | ★ 1036 -> 1037 | 内容更新
 --- 2026-01-28 21:58:16 ---
 
+[Major]
+新增：staruhub/ClaudeSkills (★113)
+新增：maxvaega/skillkit (★110)
+新增：tech-shrimp/agent-skills-examples (★101)
+变更：MassLab-SII/open-agent-skills | ★ 136 -> 137 | 内容更新
+变更：nextlevelbuilder/ui-ux-pro-max-skill | ★ 24357 -> 24381 | 内容更新
+变更：OthmanAdi/planning-with-files | ★ 11658 -> 11661 | 内容更新
+变更：yusufkaraaslan/Skill_Seekers | ★ 8299 -> 8307 | 内容更新
+变更：muratcankoylan/Agent-Skills-for-Context-Engineering | ★ 7895 -> 7900 | 内容更新
+变更：K-Dense-AI/claude-scientific-skills | ★ 7352 -> 7357 | 内容更新
+变更：sickn33/antigravity-awesome-skills | ★ 4738 -> 4769 | 内容更新
+变更：PleasePrompto/notebooklm-skill | ★ 2812 -> 2818 | 内容更新
+变更：teng-lin/notebooklm-py | ★ 1630 -> 1633 | 内容更新
+变更：CloudAI-X/claude-workflow-v2 | ★ 1220 -> 1222 | 内容更新
+变更：skillcreatorai/Ai-Agent-Skills | ★ 631 -> 632 | 内容更新
+变更：wshuyi/x-article-publisher-skill | ★ 506 -> 507 | 内容更新
+变更：conorluddy/ios-simulator-skill | ★ 410 -> 413 | 内容更新
+变更：alirezarezvani/claude-code-skill-factory | ★ 403 -> 409 | 内容更新
+变更：softaworks/agent-toolkit | ★ 330 -> 331 | 内容更新
+变更：vstorm-co/pydantic-deepagents | ★ 231 -> 233 | 内容更新
+变更：GPTomics/bioSkills | ★ 149 -> 150 | 内容更新
+变更：moltbot/skills | ★ 131 -> 134 | 内容更新
+变更：ancoleman/ai-design-components | ★ 130 -> 134 | 内容更新
+[Other]
+新增：GBSOSS/-mcp-to-skill-converter (★112)
+新增：wlzh/skills (★107)
+新增：jthack/ffuf_claude_skill (★102)
+变更：ComposioHQ/awesome-claude-skills | ★ 27257 -> 27282 | 内容更新
+变更：agentskills/agentskills | ★ 7681 -> 7689 | 内容更新
+变更：trailofbits/skills | ★ 2121 -> 2125 | 内容更新
+变更：mrgoonie/claudekit-skills | ★ 1484 -> 1485 | 内容更新
+变更：mvanhorn/last30days-skill | ★ 1341 -> 1356 | 内容更新
+变更：op7418/NanoBanana-PPT-Skills | ★ 1037 -> 1039 | 内容更新
+变更：huangserva/skill-prompt-generator | ★ 948 -> 949 | 内容更新
+变更：Prat011/awesome-llm-skills | ★ 770 -> 771 | 内容更新
+变更：KKKKhazix/Khazix-Skills | ★ 700 -> 702 | 内容更新
+变更：YuJunZhiXue/StudyAnalysis-Skills | ★ 273 -> 274 | 内容更新
+变更：comeonzhj/Auto-Redbook-Skills | ★ 250 -> 251 | 内容更新
+变更：ComposioHQ/awesome-codex-skills | ★ 225 -> 227 | 内容更新
+变更：jdrhyne/agent-skills | ★ 134 -> 138 | 内容更新
+--- 2026-01-28 23:08:36 ---
+
