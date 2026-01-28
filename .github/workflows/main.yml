@@ -1,37 +1,44 @@
-name: GitHub Monitor Bot
+name: GitHub Python Repo Monitor
 
 on:
-  workflow_dispatch:      # 允许你在 GitHub 网页上点击按钮手动运行
   schedule:
-    - cron: '0 1 * * *'  
+    # 表达式说明：北京时间早上 9:00 等于 UTC 时间凌晨 1:00
+    # 分 时 日 月 周
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    # 支持手动运行按钮
 
 jobs:
   run-monitor:
     runs-on: ubuntu-latest
-    permissions:          # 显式声明权限，确保能写回 CSV
-      contents: write
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10'
+          cache: 'pip'
 
-      - name: Install dependencies
-        run: pip install requests pandas python-dotenv
+      - name: Install Dependencies
+        run: |
+          pip install requests pandas cozepy python-dotenv
 
       - name: Run Monitor Script
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 使用内置 Token
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }} # 需在 Settings 填入
-        run: python main.py  # <--- 这里已经帮你改成了 main.py
+          # 在 GitHub Repo -> Settings -> Secrets and variables -> Actions 中配置以下密钥
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          COZE_API_TOKEN: ${{ secrets.COZE_API_TOKEN }}
+        run: python main.py
 
-      - name: Save Data Changes
+      - name: Commit and Push Changes
+        # 这一步非常重要：将更新后的 CSV 数据和日志同步回仓库
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add Data_Total/ Data_Changes/ Logs/
-          git commit -m "Auto update data [skip ci]" || echo "No changes to commit"
+          git commit -m "Auto-update data and logs [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
           git push
