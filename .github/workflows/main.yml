@@ -1,0 +1,35 @@
+name: GitHub Monitor Bot
+
+on:
+  workflow_dispatch:      # 允许手动点击运行（测试用）
+  schedule:
+    - cron: '0 2 * * *'  
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install requests pandas python-dotenv
+
+      - name: Run Monitor Script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 使用内置Token
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }} # 这个需要去Settings填
+        run: python monitor.py
+
+      - name: Save Data Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add Data_Total/ Data_Changes/ Logs/
+          git commit -m "Auto update data [skip ci]" || echo "No changes to commit"
+          git push
