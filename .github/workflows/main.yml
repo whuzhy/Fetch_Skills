@@ -2,11 +2,12 @@ name: GitHub Python Repo Monitor
 
 on:
   schedule:
-    # 表达式说明：北京时间早上 9:00 等于 UTC 时间凌晨 1:00
-    # 分 时 日 月 周
-    - cron: '0 1 * * *'
+    - cron: '0 1 * * *' # 北京时间 09:00 (UTC 01:00)
   workflow_dispatch:
-    # 支持手动运行按钮
+
+# 必须显式声明权限，否则 git push 会报 403 错误
+permissions:
+  contents: write
 
 jobs:
   run-monitor:
@@ -20,25 +21,29 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'
 
       - name: Install Dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install requests pandas cozepy python-dotenv
 
       - name: Run Monitor Script
         env:
-          # 在 GitHub Repo -> Settings -> Secrets and variables -> Actions 中配置以下密钥
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           COZE_API_TOKEN: ${{ secrets.COZE_API_TOKEN }}
         run: python main.py
 
       - name: Commit and Push Changes
-        # 这一步非常重要：将更新后的 CSV 数据和日志同步回仓库
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          # 确保添加所有数据和日志目录
           git add Data_Total/ Data_Changes/ Logs/
-          git commit -m "Auto-update data and logs [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
-          git push
+          # 只有在有变化时才提交，防止报错
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-update data and logs [$(date '+%Y-%m-%d %H:%M:%S')]"
+            git push
+          else
+            echo "No changes to commit"
+          fi
