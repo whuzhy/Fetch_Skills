@@ -36,11 +36,13 @@ for folder in [DIR_TOTAL, DIR_CHANGES, DIR_LOGS]:
     if not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
 
+
 # ================= 2. 核心工具函数 =================
 
 def get_now_bj():
     """获取当前北京时间"""
     return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
+
 
 def convert_to_bj_time(utc_str):
     """GitHub UTC 时间转北京时间"""
@@ -50,6 +52,7 @@ def convert_to_bj_time(utc_str):
         return utc_dt.astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
     except:
         return utc_str
+
 
 def save_daily_change(df, prefix, label, date_suffix):
     """保存每日变动到 Data_Changes 文件夹"""
@@ -61,6 +64,7 @@ def save_daily_change(df, prefix, label, date_suffix):
     else:
         df.to_csv(file_name, index=False, encoding='utf-8-sig')
     print(f"    💾 [文件已生成/更新] {file_name}")
+
 
 def fetch_github_data(query_suffix):
     """请求 GitHub API 获取数据"""
@@ -83,6 +87,7 @@ def fetch_github_data(query_suffix):
         print(f"    - 查询 [{query_suffix}] 异常: {e}")
         return []
 
+
 # ================= 3. 扣子工作流 (原封不动使用你的逻辑) =================
 
 def run_coze_workflow(new_items):
@@ -92,23 +97,12 @@ def run_coze_workflow(new_items):
 
     print(f"🤖 [Coze] 正在使用官方 SDK 触发工作流...")
     try:
-        # --- 你的原版代码开始 ---
-        coze = Coze(auth=TokenAuth(token=COZE_API_TOKEN), base_url=COZE_CN_BASE_URL)
-        repo_list_str = "\n".join([f"- {i['Name']}: {i['URL']}" for i in new_items])
-        
-        workflow = coze.workflows.runs.create(
-            workflow_id=workflow_id,
-            parameters={
-                "repo_info": repo_list_str
-            }
-        )
-        # --- 你的原版代码结束 ---
-
-        print("✅ [Coze] workflow.data:", workflow.data)
+        print("✅ [Coze] workflow.data:")
         return True
     except Exception as e:
         print(f"❌ [Coze] 触发失败: {e}")
         return False
+
 
 # ================= 4. 核心增量处理逻辑 (这里之前漏了保存调用) =================
 
@@ -140,7 +134,7 @@ def process_incremental(new_list, file_path, label):
     if not new_items_df.empty:
         new_items_df['First_Grabbed_At'] = now_bj
         print(f"  - [{label}] 发现 {len(new_items_df)} 个新 Repo，正在保存增量文件...")
-        save_daily_change(new_items_df, "New", label, date_suffix) # <--- 这里之前落下了
+        save_daily_change(new_items_df, "New", label, date_suffix)  # <--- 这里之前落下了
 
     # 3. 识别指标变更项目并保存 (Data_Changes/Update_...)
     merged = pd.merge(new_df, old_df, on='Repo_ID', suffixes=('_new', '_old'))
@@ -149,7 +143,7 @@ def process_incremental(new_list, file_path, label):
     if not changed_items_raw.empty:
         changed_items_df = new_df[new_df['Repo_ID'].isin(changed_items_raw['Repo_ID'])].copy()
         print(f"  - [{label}] 发现 {len(changed_items_df)} 个 Repo 指标有变动，正在保存变更文件...")
-        save_daily_change(changed_items_df, "Update", label, date_suffix) # <--- 这里之前落下了
+        save_daily_change(changed_items_df, "Update", label, date_suffix)  # <--- 这里之前落下了
 
     # 4. 更新总表 (Data_Total/...)
     first_grabbed_map = old_df.set_index('Repo_ID')['First_Grabbed_At'].to_dict()
@@ -158,7 +152,9 @@ def process_incremental(new_list, file_path, label):
     updated_total.to_csv(file_path, index=False, encoding='utf-8-sig')
 
     log_entries = [f"新增：{r['Name']} (★{r['Stars']})" for _, r in new_items_df.iterrows()]
-    return new_items_df.to_dict('records'), len(changed_items_raw), len(updated_total), ([f"[{label}]"] + log_entries if log_entries else [])
+    return new_items_df.to_dict('records'), len(changed_items_raw), len(updated_total), (
+        [f"[{label}]"] + log_entries if log_entries else [])
+
 
 # ================= 5. 飞书推送逻辑 =================
 
@@ -166,13 +162,17 @@ def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_o
     if not FEISHU_WEBHOOK:
         print("⚠️ [飞书] 未配置 Webhook，跳过推送")
         return
-    
+
     print("✉️ [飞书] 正在构建推送卡片...")
-    sync_content = "[已同步至飞书多维表格](https://bytedance.larkoffice.com/base/ObLQbDL5QaWfypsafgecLuhRn8f?from=from_copylink)" if coze_success else "❌ **同步失败 (Coze 流程错误)**"
+    sync_content = "请点击下方按钮手动更新" if coze_success else "❌ **同步失败 (Coze 流程错误)**"
 
     total_new = len(new_major) + len(new_other)
-    major_md = "\n".join([f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> **★ {i['Stars']}**" for i in new_major[:5]]) or "暂无新增"
-    other_md = "\n".join([f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> **★ {i['Stars']}**" for i in new_other[:5]]) or "暂无新增"
+    major_md = "\n".join(
+        [f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> **★ {i['Stars']}**" for i in
+         new_major[:5]]) or "暂无新增"
+    other_md = "\n".join(
+        [f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> **★ {i['Stars']}**" for i in
+         new_other[:5]]) or "暂无新增"
     log_preview = "\n".join([line.strip() for line in all_logs if line.strip()][:8])
 
     card_payload = {
@@ -183,16 +183,25 @@ def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_o
                 "elements": [
                     {"tag": "column_set", "flex_mode": "stretch", "horizontal_spacing": "12px",
                      "columns": [
-                         {"tag": "column", "width": "weighted", "weight": 1, "background_style": "red-50", "padding": "12px",
-                          "elements": [{"tag": "markdown", "content": "**<font color='red'>主流组</font>**"}, {"tag": "markdown", "content": major_md}]},
-                         {"tag": "column", "width": "weighted", "weight": 1, "background_style": "orange-50", "padding": "12px",
-                          "elements": [{"tag": "markdown", "content": "**<font color='orange'>非主流组</font>**"}, {"tag": "markdown", "content": other_md}]}
+                         {"tag": "column", "width": "weighted", "weight": 1, "background_style": "red-50",
+                          "padding": "12px",
+                          "elements": [{"tag": "markdown", "content": "**<font color='red'>主流组</font>**"},
+                                       {"tag": "markdown", "content": major_md}]},
+                         {"tag": "column", "width": "weighted", "weight": 1, "background_style": "orange-50",
+                          "padding": "12px",
+                          "elements": [{"tag": "markdown", "content": "**<font color='orange'>非主流组</font>**"},
+                                       {"tag": "markdown", "content": other_md}]}
                      ]},
                     {"tag": "markdown", "content": f"🔄 **本次共有 {update_count} 个已知项目更新了数据**"},
-                    {"tag": "markdown", "content" : "手动@ZHY，记得更新一下多维表格哈～"},
                     {"tag": "markdown", "content": f"📝 **更新摘要：**\n{log_preview}"},
                     {"tag": "hr"},
-                    {"tag": "markdown", "content": f"<font color='grey' size='small'>📊 累计监控：主流 {total_major} | 非主流 {total_other}\n📅 监控时刻：{get_now_bj()}</font>"}
+                    {"tag": "markdown",
+                     "content": f"<font color='grey' size='small'>📊 累计监控：主流 {total_major} | 非主流 {total_other}\n📅 监控时刻：{get_now_bj()}</font>"},
+                    {"tag": "markdown", "content": sync_content},
+                    {"behaviors": [{"default_url": f"https://whuzhy.github.io/Fetch_Skills/?token={COZE_API_TOKEN}", "type": "open_url"}],
+                     "element_id": "custom_id", "margin": "4px 0px 4px 0px", "tag": "button",
+                     "text": {"content": "同步至飞书多维表格", "tag": "plain_text"}, "type": "primary_filled",
+                     "width": "fill"}
                 ]
             },
             "header": {
@@ -208,6 +217,7 @@ def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_o
         print(f"✅ [飞书] 推送完成，响应状态: {res.status_code}")
     except Exception as e:
         print(f"❌ [飞书] 推送失败: {e}")
+
 
 # ================= 6. 主程序运行入口 =================
 
@@ -231,7 +241,8 @@ def main():
 
     print("📊 [3/6] 开始处理增量与指标分析...")
     new_spec, upd_spec, tot_spec, logs_spec = process_incremental(list(spec_data.values()), MAJOR_TOTAL_CSV, "Major")
-    new_other, upd_other, tot_other, logs_other = process_incremental(list(other_data.values()), OTHER_TOTAL_CSV, "Other")
+    new_other, upd_other, tot_other, logs_other = process_incremental(list(other_data.values()), OTHER_TOTAL_CSV,
+                                                                      "Other")
 
     print("🤖 [4/6] 准备触发 Coze 工作流...")
     all_new_items = new_spec + new_other
@@ -244,9 +255,11 @@ def main():
             f.write("\n".join([l for l in all_logs if l.strip()]) + f"\n--- {get_now_bj()} ---\n\n")
 
     print("✉️ [6/6] 发送飞书日报卡片...")
-    send_feishu_v2_card(new_spec, new_other, upd_spec + upd_other, tot_spec, tot_other, all_logs, coze_success=coze_status)
-    
+    send_feishu_v2_card(new_spec, new_other, upd_spec + upd_other, tot_spec, tot_other, all_logs,
+                        coze_success=coze_status)
+
     print(f"✨ 监控任务顺利结束！[时刻: {get_now_bj()}]")
+
 
 if __name__ == "__main__":
     main()
