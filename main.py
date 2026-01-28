@@ -58,7 +58,6 @@ def fetch_github_data(query_suffix):
 
 def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_other, all_logs):
     if not FEISHU_WEBHOOK: return
-    bj_date = datetime.now().strftime('%Y-%m-%d')
     total_new = len(new_major) + len(new_other)
     major_md = "\n".join([
                              f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> **<font color='carmine'>★ {i['Stars']}</font>**"
@@ -109,13 +108,26 @@ def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_o
         pass
 
 
-# ================= 3. 核心增量处理 (关键逻辑修改) =================
+# ================= 3. 核心增量处理 (按天合并逻辑) =================
+
+def save_daily_change(df, prefix, label, date_suffix):
+    file_name = os.path.join(DIR_CHANGES, f"{prefix}_{label}_{date_suffix}.csv")
+
+    if os.path.exists(file_name):
+        existing_df = pd.read_csv(file_name)
+        # 关键修改：使用 keep='last'。
+        # 当 pd.concat 发生 ID 重复时，保留新传入的数据（即出现在列表最后的 new df）
+        combined_df = pd.concat([existing_df, df]).drop_duplicates('Repo_ID', keep='last')
+        combined_df.to_csv(file_name, index=False, encoding='utf-8-sig')
+    else:
+        df.to_csv(file_name, index=False, encoding='utf-8-sig')
+
 
 def process_incremental(new_list, file_path, label):
     now_bj = get_now_bj()
-    file_ts = datetime.now().strftime('%m%d_%H%M')
+    # 关键修改：日期后缀只保留到“天”
+    date_suffix = datetime.now().strftime('%m%d')
 
-    # 构造本次抓取的数据帧
     new_df = pd.DataFrame([{
         'Repo_ID': i['id'],
         'Name': i['full_name'],
@@ -124,12 +136,11 @@ def process_incremental(new_list, file_path, label):
         'URL': i['html_url'],
         'Created_At': convert_to_bj_time(i['created_at']),
         'Updated_At': convert_to_bj_time(i['updated_at']),
-        'Last_Grabbed_At': now_bj  # 每次都更新的“最后检测时间”
+        'Last_Grabbed_At': now_bj
     } for i in new_list])
 
     log_entries = []
 
-    # 1. 如果文件不存在，初始化，此时 First 和 Last 是一样的
     if not os.path.exists(file_path):
         new_df['First_Grabbed_At'] = now_bj
         new_df.to_csv(file_path, index=False, encoding='utf-8-sig')
@@ -138,51 +149,50 @@ def process_incremental(new_list, file_path, label):
     old_df = pd.read_csv(file_path)
     old_df['Repo_ID'] = old_df['Repo_ID'].astype(int)
 
-    # 2. 识别新增项目
+    # 1. 识别新增
     new_mask = ~new_df['Repo_ID'].isin(old_df['Repo_ID'])
     new_items_df = new_df[new_mask].copy()
     if not new_items_df.empty:
-        new_items_df['First_Grabbed_At'] = now_bj  # 新项目记录第一次抓取时间
+        new_items_df['First_Grabbed_At'] = now_bj
         for _, row in new_items_df.iterrows():
             log_entries.append(f"新增：{row['Name']} (★{row['Stars']})")
+        # 保存到按天合并的“新增表”
+        save_daily_change(new_items_df, "New", label, date_suffix)
 
-    # 3. 识别指标变更
+    # 2. 识别变更
     merged = pd.merge(new_df, old_df, on='Repo_ID', suffixes=('_new', '_old'))
     changed_mask = (merged['Stars_new'] != merged['Stars_old']) | (merged['Updated_At_new'] != merged['Updated_At_old'])
-    changed_items = merged[changed_mask]
+    changed_items_raw = merged[changed_mask]
 
-    for _, row in changed_items.iterrows():
-        details = []
-        if row['Stars_new'] != row['Stars_old']:
-            details.append(f"★ {row['Stars_old']} -> {row['Stars_new']}")
-        if row['Updated_At_new'] != row['Updated_At_old']:
-            details.append(f"内容更新")
-        log_entries.append(f"变更：{row['Name_new']} | " + " | ".join(details))
+    if not changed_items_raw.empty:
+        # 整理变更表格式，使其与总表列对齐
+        changed_items_df = new_df[new_df['Repo_ID'].isin(changed_items_raw['Repo_ID'])].copy()
+        # 补全 First_Grabbed_At 以便保存
+        first_map = old_df.set_index('Repo_ID')['First_Grabbed_At'].to_dict()
+        changed_items_df['First_Grabbed_At'] = changed_items_df['Repo_ID'].map(first_map)
 
-    # 4. 合并逻辑：保留旧表的 First_Grabbed_At
-    # 我们以新抓取的 new_df 为主，通过 map 映射回旧表的 First_Grabbed_At
+        for _, row in changed_items_raw.iterrows():
+            details = []
+            if row['Stars_new'] != row['Stars_old']:
+                details.append(f"★ {row['Stars_old']} -> {row['Stars_new']}")
+            if row['Updated_At_new'] != row['Updated_At_old']:
+                details.append(f"内容更新")
+            log_entries.append(f"变更：{row['Name_new']} | " + " | ".join(details))
+
+        # 保存到按天合并的“更新表”
+        save_daily_change(changed_items_df, "Update", label, date_suffix)
+
+    # 3. 合并到总表
     first_grabbed_map = old_df.set_index('Repo_ID')['First_Grabbed_At'].to_dict()
-
-    # 对 new_df 应用映射：如果在旧表中有记录，取旧记录的 First；如果是新项目，取当前时间
     new_df['First_Grabbed_At'] = new_df['Repo_ID'].map(first_grabbed_map).fillna(now_bj)
-
-    # 最终合并并排序，确保 ID 唯一且保留最新数据（Last_Grabbed_At 会更新）
     updated_total = pd.concat([new_df, old_df]).drop_duplicates('Repo_ID', keep='first')
 
-    # 整理列顺序
     cols = ['Repo_ID', 'Name', 'Stars', 'License', 'URL', 'Created_At', 'Updated_At', 'First_Grabbed_At',
             'Last_Grabbed_At']
-    updated_total = updated_total[cols]
-    updated_total.to_csv(file_path, index=False, encoding='utf-8-sig')
-
-    if not new_items_df.empty:
-        new_items_df.to_csv(os.path.join(DIR_CHANGES, f"New_{label}_{file_ts}.csv"), index=False, encoding='utf-8-sig')
-    if not changed_items.empty:
-        changed_items.to_csv(os.path.join(DIR_CHANGES, f"Update_{label}_{file_ts}.csv"), index=False,
-                             encoding='utf-8-sig')
+    updated_total[cols].to_csv(file_path, index=False, encoding='utf-8-sig')
 
     final_logs = [f"[{label}]"] + log_entries if log_entries else []
-    return new_items_df.to_dict('records'), len(changed_items), len(updated_total), final_logs
+    return new_items_df.to_dict('records'), len(changed_items_raw), len(updated_total), final_logs
 
 
 # ================= 4. 主流程 =================
@@ -215,7 +225,7 @@ def main():
             f.write("\n".join(clean_write) + f"\n--- {get_now_bj()} ---\n\n")
 
     send_feishu_v2_card(new_spec, new_other, upd_spec + upd_other, tot_spec, tot_other, all_logs)
-    print("✨ 执行成功！First_Grabbed_At 与 Last_Grabbed_At 已区分。")
+    print(f"✨ 执行成功！今日变动已合并至 Data_Changes/ 对应日期的 CSV 中。")
 
 
 if __name__ == "__main__":
