@@ -65,47 +65,56 @@ def fetch_github_data(query_suffix):
         return []
 
 
-# ================= 3. Coze 工作流集成 =================
+# ================= 3. Coze 工作流集成 (修改：增加返回值) =================
 
 def run_coze_workflow(new_items):
     """
     当监测到新增项目时，触发 Coze 工作流
+    返回：True (成功) / False (失败)
     """
     if not COZE_API_TOKEN or not new_items:
         print("⚠️ 跳过 Coze 触发: 未配置 Token 或无新增项目")
-        return
+        return True
 
     # 初始化 Coze 客户端
     coze = Coze(auth=TokenAuth(token=COZE_API_TOKEN), base_url=COZE_CN_BASE_URL)
 
-    # 格式化输入数据（你可以根据工作流需求调整格式）
+    # 格式化输入数据
     repo_list_str = "\n".join([f"- {i['Name']}: {i['URL']}" for i in new_items])
 
     print(f"🤖 正在触发 Coze 工作流分析 {len(new_items)} 个新项目...")
     try:
         workflow = coze.workflows.runs.create(
             workflow_id=COZE_WORKFLOW_ID,
-            # 注意：这里的 parameters 的 key 需与 Coze 工作流开始节点的变量名一致
             parameters={
                 "repo_info": repo_list_str
             }
         )
         print("✅ Coze 工作流启动成功:", workflow.data)
+        return True
     except Exception as e:
         print(f"❌ Coze 触发失败: {e}")
+        return False
 
 
-# ================= 4. 飞书推送逻辑 (保持原样) =================
+# ================= 4. 飞书推送逻辑 (修改：增加 coze_status 参数) =================
 
-def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_other, all_logs):
+def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_other, all_logs, coze_success=True):
     if not FEISHU_WEBHOOK: return
+
+    # 根据工作流结果确定同步状态文案
+    if coze_success:
+        sync_content = "[已同步至飞书多维表格](https://bytedance.larkoffice.com/base/ObLQbDL5QaWfypsafgecLuhRn8f?from=from_copylink)"
+    else:
+        sync_content = "❌ **同步失败 (Coze 工作流异常)**"
+
     total_new = len(new_major) + len(new_other)
     major_md = "\n".join([
-                             f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> **<font color='carmine'>★ {i['Stars']}</font>**"
-                             for i in new_major[:5]]) or "暂无新增"
+        f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> **<font color='carmine'>★ {i['Stars']}</font>**"
+        for i in new_major[:5]]) or "暂无新增"
     other_md = "\n".join([
-                             f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> <text_tag color='orange'>{i['License']}</text_tag>"
-                             for i in new_other[:5]]) or "暂无新增"
+        f"• [{i['Name']}]({i['URL']}) <font color='grey'>🐣{i['Created_At'][:10]}</font> <text_tag color='orange'>{i['License']}</text_tag>"
+        for i in new_other[:5]]) or "暂无新增"
     cleaned_logs = [line.strip() for line in all_logs if line.strip()]
     log_preview = "\n".join(cleaned_logs[:8])
 
@@ -129,6 +138,7 @@ def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_o
                               {"tag": "markdown", "content": other_md}]}
                      ]},
                     {"tag": "markdown", "content": f"🔄 **共有 {update_count} 个已知项目更新了内容或指标**"},
+                    {"tag": "markdown", "content": sync_content},
                     {"tag": "markdown", "content": f"📝 **日志摘要：**\n{log_preview}"},
                     {"tag": "hr"},
                     {"tag": "markdown",
@@ -152,7 +162,6 @@ def send_feishu_v2_card(new_major, new_other, update_count, total_major, total_o
 # ================= 5. 核心增量处理逻辑 =================
 
 def save_daily_change(df, prefix, label, date_suffix):
-    """按天合并变动数据，同一天内重复项目保留最新一条"""
     file_name = os.path.join(DIR_CHANGES, f"{prefix}_{label}_{date_suffix}.csv")
     if os.path.exists(file_name):
         existing_df = pd.read_csv(file_name)
@@ -187,7 +196,6 @@ def process_incremental(new_list, file_path, label):
     old_df = pd.read_csv(file_path)
     old_df['Repo_ID'] = old_df['Repo_ID'].astype(int)
 
-    # 1. 识别真正的新增项目
     new_mask = ~new_df['Repo_ID'].isin(old_df['Repo_ID'])
     new_items_df = new_df[new_mask].copy()
     if not new_items_df.empty:
@@ -196,7 +204,6 @@ def process_incremental(new_list, file_path, label):
             log_entries.append(f"新增：{row['Name']} (★{row['Stars']})")
         save_daily_change(new_items_df, "New", label, date_suffix)
 
-    # 2. 识别指标变更
     merged = pd.merge(new_df, old_df, on='Repo_ID', suffixes=('_new', '_old'))
     changed_mask = (merged['Stars_new'] != merged['Stars_old']) | (merged['Updated_At_new'] != merged['Updated_At_old'])
     changed_items_raw = merged[changed_mask]
@@ -215,7 +222,6 @@ def process_incremental(new_list, file_path, label):
             log_entries.append(f"变更：{row['Name_new']} | " + " | ".join(details))
         save_daily_change(changed_items_df, "Update", label, date_suffix)
 
-    # 3. 更新总表 (保留首次抓取时间)
     first_grabbed_map = old_df.set_index('Repo_ID')['First_Grabbed_At'].to_dict()
     new_df['First_Grabbed_At'] = new_df['Repo_ID'].map(first_grabbed_map).fillna(now_bj)
     updated_total = pd.concat([new_df, old_df]).drop_duplicates('Repo_ID', keep='first')
@@ -228,7 +234,7 @@ def process_incremental(new_list, file_path, label):
     return new_items_df.to_dict('records'), len(changed_items_raw), len(updated_total), final_logs
 
 
-# ================= 6. 主程序运行入口 =================
+# ================= 6. 主程序运行入口 (修改：调整发卡片时机) =================
 
 def main():
     if not TOKEN:
@@ -247,25 +253,28 @@ def main():
             for item in f.result():
                 (spec_data if group == "SPEC" else other_data)[item['id']] = item
 
-    # 增量处理
+    # 1. 增量数据处理
     new_spec, upd_spec, tot_spec, logs_spec = process_incremental(list(spec_data.values()), MAJOR_TOTAL_CSV, "Major")
     new_other, upd_other, tot_other, logs_other = process_incremental(list(other_data.values()), OTHER_TOTAL_CSV,
                                                                       "Other")
 
-    # --- 关键逻辑：触发 Coze 工作流 ---
+    # 2. 触发 Coze 工作流 (如果有新项目)
     all_new_items = new_spec + new_other
+    coze_status = True
     if all_new_items:
-        run_coze_workflow(all_new_items)
+        coze_status = run_coze_workflow(all_new_items)
 
-    # 写入本地日志
+    # 3. 写入本地日志
     all_logs = logs_spec + logs_other
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         clean_write = [line for line in all_logs if line.strip()]
         if clean_write:
             f.write("\n".join(clean_write) + f"\n--- {get_now_bj()} ---\n\n")
 
-    # 推送飞书卡片
-    send_feishu_v2_card(new_spec, new_other, upd_spec + upd_other, tot_spec, tot_other, all_logs)
+    # 4. 最后发送飞书卡片 (包含工作流状态结果)
+    send_feishu_v2_card(new_spec, new_other, upd_spec + upd_other, tot_spec, tot_other, all_logs,
+                        coze_success=coze_status)
+
     print("✨ 监控任务执行完毕。")
 
 
