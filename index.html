@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Coze 一键启动按钮</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f1f5f9; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 320px; }
+        button { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
+        button:hover { background: #059669; }
+        button:disabled { background: #9ca3af; }
+        #status { margin-top: 1rem; font-size: 13px; color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>扣子一键执行</h3>
+        <p style="font-size: 14px; color: #666;">检测到 Token 后点击即可启动</p>
+        <button id="btn">启动工作流</button>
+        <div id="status">等待操作...</div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('btn');
+        const status = document.getElementById('status');
+        const WORKFLOW_ID = "7600384889276547126";
+
+        btn.addEventListener('click', async () => {
+            // --- 核心逻辑：从 URL 参数获取 Token ---
+            const urlParams = new URLSearchParams(window.location.search);
+            let token = urlParams.get('token');
+
+            // 如果 URL 里没传，就弹窗问一次
+            if (!token) {
+                token = prompt("URL中未检测到Token，请手动输入：");
+            }
+            if (!token) return;
+
+            // UI 状态
+            btn.disabled = true;
+            status.innerText = "🚀 正在发送请求...";
+
+            try {
+                const response = await fetch('https://api.coze.cn/v1/workflow/run', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ workflow_id: WORKFLOW_ID })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    status.innerText = "✅ 启动成功！";
+                    console.log(result);
+                } else {
+                    status.innerText = "❌ 失败：" + (result.msg || "未知错误");
+                }
+            } catch (e) {
+                status.innerText = "❌ 网络错误: " + e.message;
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
