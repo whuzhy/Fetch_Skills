@@ -35,3 +35,15 @@
 变更：comeonzhj/Auto-Redbook-Skills | ★ 249 -> 250 | 内容更新
 --- 2026-01-28 21:54:07 ---
 
+[Major]
+变更：nextlevelbuilder/ui-ux-pro-max-skill | ★ 24355 -> 24357 | 内容更新
+变更：K-Dense-AI/claude-scientific-skills | ★ 7351 -> 7352 | 内容更新
+变更：sickn33/antigravity-awesome-skills | ★ 4737 -> 4738 | 内容更新
+变更：moltbot/skills | ★ 130 -> 131 | 内容更新
+[Other]
+变更：ComposioHQ/awesome-claude-skills | ★ 27256 -> 27257 | 内容更新
+变更：agentskills/agentskills | ★ 7678 -> 7681 | 内容更新
+变更：mvanhorn/last30days-skill | ★ 1340 -> 1341 | 内容更新
+变更：op7418/NanoBanana-PPT-Skills | ★ 1036 -> 1037 | 内容更新
+--- 2026-01-28 21:58:16 ---
+
