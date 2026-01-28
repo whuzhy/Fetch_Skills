@@ -1,3 +1,18 @@
 [主流] 库初始化入库 46 条
 [其他] 库初始化入库 37 条
 --- 2026-01-28 21:23:30 ---
+[主流]
+变更：nextlevelbuilder/ui-ux-pro-max-skill | ★24344->24347 | 内容更新
+变更：OthmanAdi/planning-with-files | ★11654->11656 | 内容更新
+变更：yusufkaraaslan/Skill_Seekers | ★8292->8296 | 内容更新
+变更：muratcankoylan/Agent-Skills-for-Context-Engineering | ★7893->7894 | 内容更新
+变更：K-Dense-AI/claude-scientific-skills | ★7345->7347 | 内容更新
+变更：sickn33/antigravity-awesome-skills | ★4724->4727 | 内容更新
+变更：PleasePrompto/notebooklm-skill | ★2809->2810 | 内容更新
+变更：joeseesun/anything-to-notebooklm | ★272->273 | 内容更新
+[其他]
+变更：ComposioHQ/awesome-claude-skills | ★27246->27250 | 内容更新
+变更：agentskills/agentskills | ★7674->7675 | 内容更新
+变更：mvanhorn/last30days-skill | ★1332->1335 | 内容更新
+变更：op7418/NanoBanana-PPT-Skills | ★1034->1036 | 内容更新
+--- 2026-01-28 21:31:12 ---
