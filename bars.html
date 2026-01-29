@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 动态数据对比工具 - 联网单文件版</title>
+    <title>3D 动态数据对比工具 - GitHub 部署版</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -28,7 +28,9 @@
         "react": "https://esm.sh/react@19.0.0",
         "react-dom": "https://esm.sh/react-dom@19.0.0",
         "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+        "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
         "three": "https://esm.sh/three@0.174.0",
+        "three/examples/jsm/loaders/EXRLoader": "https://esm.sh/three@0.174.0/examples/jsm/loaders/EXRLoader",
         "@react-three/fiber": "https://esm.sh/@react-three/fiber@9.0.0?external=react,react-dom,three",
         "@react-three/drei": "https://esm.sh/@react-three/drei@10.0.0?external=react,react-dom,three,@react-three/fiber",
         "lucide-react": "https://esm.sh/lucide-react@0.475.0?external=react"
@@ -37,9 +39,15 @@
     </script>
 </head>
 <body>
+    <div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #3b82f6; font-family: sans-serif; z-index: 999;">
+        正在加载 3D 引擎...
+    </div>
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
+    <script type="text/babel" data-type="module" data-presets="react">
+        /** @jsx React.createElement */
+        /** @jsxFrag React.Fragment */
+        
         import React, { useRef, useMemo, useState, useEffect } from 'react';
         import ReactDOM from 'react-dom/client';
         import { Canvas, useThree, useFrame } from '@react-three/fiber';
@@ -53,6 +61,10 @@
           Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, Layout, 
           BarChart3, TrendingUp 
         } from 'lucide-react';
+
+        // 移除加载提示
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.style.display = 'none';
 
         // --- 数据定义 ---
         const COMPARISON_DATA = [
@@ -218,11 +230,8 @@
             if (!controlsRef.current) return;
             const controls = controlsRef.current;
             const currentIdx = Math.max(0, Math.min(total - 1, progress));
-            const floorIdx = Math.floor(currentIdx);
-            const ceilIdx = Math.min(total - 1, floorIdx + 1);
-            const alpha = currentIdx - floorIdx;
             const xPos = (currentIdx - (total - 1) / 2) * 3.5;
-            const height = (data[floorIdx].value + (data[ceilIdx].value - data[floorIdx].value) * alpha) * 0.1;
+            const height = data[Math.floor(currentIdx)].value * 0.1;
 
             if (view === CameraView.CINEMATIC) {
               const rad = (camAngle * Math.PI) / 180;
