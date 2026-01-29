@@ -358,52 +358,6 @@
           );
         };
 
-        // --- 新增组件：3D 辅助坐标轴系统 ---
-        const AxisSystem = ({ data }) => {
-          const total = data.length;
-          // 计算图表整体宽度
-          const width = (total - 1) * BAR_SPACING;
-          // 获取最大值以计算高度
-          const maxVal = data[data.length - 1].value;
-          const maxHeight = maxVal * SCALE_FACTOR;
-          
-          // 坐标轴左侧起始位置 (比第一个数据点再往左偏移一些)
-          const startX = -width / 2;
-          
-          return (
-            <group>
-              {/* 1. Y轴 (左侧垂直发光线) */}
-              <mesh position={[startX - 6, maxHeight / 2, 0]}>
-                 <cylinderGeometry args={[0.2, 0.2, maxHeight, 16]} />
-                 <meshStandardMaterial color="#6366f1" emissive="#4f46e5" emissiveIntensity={2} transparent opacity={0.8} />
-              </mesh>
-              
-              {/* 2. X轴 (底部水平发光线) */}
-              <mesh position={[0, -0.5, 0]}>
-                 <cylinderGeometry args={[0.2, 0.2, width + 16, 16]} rotation={[0, 0, Math.PI / 2]} />
-                 <meshStandardMaterial color="#6366f1" emissive="#4f46e5" emissiveIntensity={2} transparent opacity={0.8} />
-              </mesh>
-        
-              {/* 3. 水平参考线与数值刻度 (关键：帮助判断斜率) */}
-              {[0.25, 0.5, 0.75, 1.0].map((ratio, i) => (
-                <group key={i} position={[0, maxHeight * ratio, 0]}>
-                   {/* 背景横向虚线 (用细长方条模拟) */}
-                   <mesh position={[0, 0, -2]}>
-                     <boxGeometry args={[width + 12, 0.1, 0.1]} />
-                     <meshBasicMaterial color="#818cf8" transparent opacity={0.15} />
-                   </mesh>
-                   {/* 左侧 Y 轴数值标记 */}
-                   <Billboard position={[startX - 8, 0, 0]}>
-                     <Text fontSize={2.5} color="#a5b4fc" anchorX="right" anchorY="middle" fillOpacity={0.6} fontWeight="bold">
-                       {Math.round(maxVal * ratio).toLocaleString()}
-                     </Text>
-                   </Billboard>
-                </group>
-              ))}
-            </group>
-          )
-        };    
-        
         const SceneContent = (props) => {
           const activeIndex = Math.floor(props.progress);
 
@@ -440,13 +394,7 @@
               
               <directionalLight position={[100, 100, 100]} intensity={1.5} />
               <spotLight position={[-50, 150, 50]} intensity={3} angle={0.3} penumbra={1} castShadow />
-
               <ambientLight intensity={0.4} />
-              <AxisSystem data={props.data} />
-
-              <group position={[0, SCENE_FLOOR_Y, 0]}>
-                <ContactShadows opacity={0.7} scale={400} blur={2.5} far={40} resolution={1024} color="#000" position={[0, -0.01, 0]} />
-              </group>
 
               <group position={[0, SCENE_FLOOR_Y, 0]}>
                 <ContactShadows opacity={0.7} scale={400} blur={2.5} far={40} resolution={1024} color="#000" position={[0, -0.01, 0]} />
