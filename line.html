@@ -278,8 +278,12 @@
                         <Text position={[0, 2.5, 0]} fontSize={1.6} fillOpacity={labelOpacity} anchorX="center">{item.flag}</Text>
                         <Text position={[0, 1.2, 0]} fontSize={0.6} fontWeight="bold" color="#ffffff" fillOpacity={labelOpacity} anchorX="center">{item.name}</Text>
                         <Text position={[0, 0, 0]} fontSize={1.4} fontWeight="black" color={active ? "#ffffff" : item.color} fillOpacity={labelOpacity} anchorX="center">
-                          {Math.round(item.value * (growth > 0.9 ? 1 : growth)).toLocaleString()}
-                        </Text>
+                          {(() => {
+                            const val = item.value * (growth > 0.9 ? 1 : growth);
+                            // 判断是否为整数，若是则直接取整显示，否则保留2位小数
+                            return Number.isInteger(val) ? Math.round(val).toLocaleString() : val.toFixed(2);
+                          })()}
+                      </Text>
                       </group>
                     </Float>
                   </Billboard>
@@ -542,23 +546,29 @@
         };
 
         const App = () => {
+          // 1. 【核心逻辑】：不管输入什么，强制从小到大排序
+          const sortedData = useMemo(() => {
+            return [...CONFIG.data].sort((a, b) => a.value - b.value);
+          }, []);
+
           const [progress, setProgress] = useState(0);
           const [isPlaying, setIsPlaying] = useState(true);
           const [view, setView] = useState(CameraView.CINEMATIC);
           
-          const [playbackSpeed, setPlaybackSpeed] = useState(1.2); 
-          const [camAngle, setCamAngle] = useState(0); 
-          const [camDistance, setCamDistance] = useState(48); 
+          // 状态初始化：读取 CONFIG 默认值或设定安全初始值
+          const [playbackSpeed, setPlaybackSpeed] = useState(CONFIG.ui.defaultSpeed || 1.2); 
+          const [camAngle, setCamAngle] = useState(CONFIG.ui.defaultCamAngle || 0); 
+          const [camDistance, setCamDistance] = useState(CONFIG.ui.defaultCamDist || 48); 
           const [thickness, setThickness] = useState(1.0);
           const [labelOffset, setLabelOffset] = useState(1.8); 
           const [showGrid, setShowGrid] = useState(true);
           const [autoRotate, setAutoRotate] = useState(true); 
 
-          const totalItems = CONFIG.data.length;
+          const totalItems = sortedData.length;
           const maxProgress = totalItems;
           
           const currentIndex = Math.floor(progress);
-          const currentItem = CONFIG.data[Math.min(totalItems - 1, currentIndex)];
+          const currentItem = sortedData[Math.min(totalItems - 1, currentIndex)];
 
           const handleReset = () => { 
             setProgress(0); 
@@ -600,8 +610,9 @@
                   <PerformanceMonitor />
                   <AdaptiveDpr />
                   <AdaptiveEvents />
+                  {/* 使用 sortedData 渲染 3D 内容 */}
                   <SceneContent 
-                    data={CONFIG.data} 
+                    data={sortedData} 
                     progress={progress} 
                     view={view} 
                     isPlaying={isPlaying} 
@@ -615,6 +626,7 @@
                 </Canvas>
               </div>
 
+              {/* 标题界面 */}
               <div className="relative top-0 left-0 p-10 md:p-14 z-10 pointer-events-none w-full flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,1)] animate-pulse" />
@@ -629,6 +641,7 @@
                 </p>
               </div>
 
+              {/* 控制台 UI */}
               <div className="z-30 pointer-events-auto">
                 <ControlsUI 
                   isPlaying={isPlaying} setIsPlaying={setIsPlaying} 
@@ -648,6 +661,7 @@
                 />
               </div>
 
+              {/* 坐标轴标签 */}
               <div className="absolute top-1/2 left-10 -translate-y-1/2 flex flex-col gap-10 opacity-10 pointer-events-none hidden lg:flex">
                 <div className="flex flex-col gap-2">
                   <div className="w-16 h-0.5 bg-indigo-500" />
