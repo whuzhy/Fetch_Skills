@@ -3,17 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2327 3D 动态数据对比工具 - 最终完整复原版</title>
+    <title>3D 动态数据可视化系统 - 单文件版</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #000; }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #000000;
+        }
+        /* 隐藏滚动条 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 10px; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Loading 遮罩动画 */
+        #loading-screen {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            color: #6366f1; font-weight: bold; letter-spacing: 0.2em;
+            transition: opacity 0.5s ease;
+        }
+        input[type="range"] { accent-color: #6366f1; }
     </style>
+
     <script type="importmap">
     {
       "imports": {
@@ -21,7 +41,8 @@
         "react-dom": "https://esm.sh/react-dom@19.0.0",
         "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
         "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
-        "three": "https://esm.sh/three@0.174.0",
+        "three": "https://esm.sh/three@0.182.0",
+        "three/examples/jsm/loaders/EXRLoader": "https://esm.sh/three@0.182.0/examples/jsm/loaders/EXRLoader",
         "@react-three/fiber": "https://esm.sh/@react-three/fiber@9.0.0?external=react,react-dom,three",
         "@react-three/drei": "https://esm.sh/@react-three/drei@10.0.0?external=react,react-dom,three,@react-three/fiber",
         "lucide-react": "https://esm.sh/lucide-react@0.475.0?external=react"
@@ -30,291 +51,497 @@
     </script>
 </head>
 <body>
+    <div id="loading-screen">INITIALIZING SYSTEM...</div>
+    
     <div id="root"></div>
 
     <script type="text/babel" data-type="module" data-presets="react">
         /** @jsx React.createElement */
-        import React, { useRef, useMemo, useState, useEffect } from 'react';
+        /** @jsxFrag React.Fragment */
+
+        import React, { useRef, useMemo, useState, useEffect, Suspense } from 'react';
         import ReactDOM from 'react-dom/client';
         import { Canvas, useThree, useFrame } from '@react-three/fiber';
         import { 
-          OrbitControls, PerspectiveCamera, Environment, ContactShadows, 
-          MeshReflectorMaterial, PerformanceMonitor, AdaptiveDpr, AdaptiveEvents,
-          Grid, Text, Billboard, Sphere, Float
+          OrbitControls, 
+          PerspectiveCamera, 
+          Environment, 
+          PerformanceMonitor,
+          AdaptiveDpr,
+          AdaptiveEvents,
+          Text,
+          Billboard,
+          ContactShadows,
+          Float,
+          BakeShadows,
+          Stars,
+          Grid,
+          Sparkles
         } from '@react-three/drei';
         import * as THREE from 'three';
-        import { Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, Layout, BarChart3, TrendingUp } from 'lucide-react';
+        import { 
+          Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, BarChart3, MoveUp
+        } from 'lucide-react';
+
+        // 移除 Loading 遮罩
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            setTimeout(() => {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => loadingScreen.remove(), 500);
+            }, 1000); // 稍微延迟以保证渲染准备就绪
+        }
 
         // ==========================================
-        // 全局配置区
+        // 全局配置与数据
         // ==========================================
         const CONFIG = {
-  "ui": {
-    "title": "2024年",
-    "highlightTitle": "世界GDP排名TOP10",
-    "subTitle": "数据来源：IMF & 世界银行 (单位：万亿美元)",
-    "defaultMode": "BAR"
-  },
-  "data": [
-    {
-      "id": "1",
-      "name": "美国",
-      "value": 29.2,
-      "unit": "万亿",
-      "color": "#d32f2f",
-      "flag": "🇺🇸"
-    },
-    {
-      "id": "2",
-      "name": "中国",
-      "value": 18.94,
-      "unit": "万亿",
-      "color": "#f44336",
-      "flag": "🇨🇳"
-    },
-    {
-      "id": "3",
-      "name": "德国",
-      "value": 4.66,
-      "unit": "万亿",
-      "color": "#ff5722",
-      "flag": "🇩🇪"
-    },
-    {
-      "id": "4",
-      "name": "日本",
-      "value": 4.04,
-      "unit": "万亿",
-      "color": "#ff9800",
-      "flag": "🇯🇵"
-    },
-    {
-      "id": "5",
-      "name": "印度",
-      "value": 3.98,
-      "unit": "万亿",
-      "color": "#ffc107",
-      "flag": "🇮🇳"
-    },
-    {
-      "id": "6",
-      "name": "英国",
-      "value": 3.64,
-      "unit": "万亿",
-      "color": "#cddc39",
-      "flag": "🇬🇧"
-    },
-    {
-      "id": "7",
-      "name": "法国",
-      "value": 3.16,
-      "unit": "万亿",
-      "color": "#8bc34a",
-      "flag": "🇫🇷"
-    },
-    {
-      "id": "8",
-      "name": "意大利",
-      "value": 2.37,
-      "unit": "万亿",
-      "color": "#4caf50",
-      "flag": "🇮🇹"
-    },
-    {
-      "id": "9",
-      "name": "加拿大",
-      "value": 2.24,
-      "unit": "万亿",
-      "color": "#009688",
-      "flag": "🇨🇦"
-    },
-    {
-      "id": "10",
-      "name": "巴西",
-      "value": 2.18,
-      "unit": "万亿",
-      "color": "#00bcd4",
-      "flag": "🇧🇷"
-    }
-  ]
-};
+          "ui": {
+            "title": "2024 亚洲 GDP 排名预测",
+            "subTitle": "数据来源：国际货币政府组织 (IMF) 统计报告",
+            "meta": "电影级星系可视化系统"
+          },
+          "data": [
+            { "id": "1", "name": "中国", "value": 18744, "color": "#ff3e3e", "flag": "🇨🇳" },
+            { "id": "2", "name": "日本", "value": 4026, "color": "#ff5e5e", "flag": "🇯🇵" },
+            { "id": "3", "name": "印度", "value": 3913, "color": "#ff9f43", "flag": "🇮🇳" },
+            { "id": "4", "name": "韩国", "value": 1713, "color": "#feca57", "flag": "🇰🇷" },
+            { "id": "5", "name": "印度尼西亚", "value": 1396, "color": "#ffdd59", "flag": "🇮🇩" },
+            { "id": "6", "name": "沙特阿拉伯", "value": 1238, "color": "#48c48f", "flag": "🇸🇦" },
+            { "id": "7", "name": "新加坡", "value": 547, "color": "#1dd1a1", "flag": "🇸🇬" },
+            { "id": "8", "name": "以色列", "value": 540, "color": "#00d2d3", "flag": "🇮🇱" },
+            { "id": "9", "name": "阿联酋", "value": 537, "color": "#54a0ff", "flag": "🇦🇪" },
+            { "id": "10", "name": "泰国", "value": 526, "color": "#5f27cd", "flag": "🇹🇭" }
+          ].sort((a, b) => a.value - b.value) 
+        };
 
-        const CameraView = { FREE: 'FREE', FRONT: 'FRONT', TOP: 'TOP', SIDE: 'SIDE', CINEMATIC: 'CINEMATIC', PANORAMA: 'PANORAMA' };
+        const SCALE_FACTOR = 0.0006;
+        const BAR_SPACING = 7.5;
+        const SCENE_FLOOR_Y = 18; 
 
-        // --- 3D 核心组件 ---
-        const BOX_GEOM = new THREE.BoxGeometry(2, 1, 2);
-        const PLANE_GEOM = new THREE.PlaneGeometry(3.5, 3.5);
+        // 替换 Enum 为普通对象
+        const CameraView = {
+          FREE: 'FREE',
+          CINEMATIC: 'CINEMATIC',
+          FRONT: 'FRONT'
+        };
 
-        const Bar = ({ item, index, total, progress, active }) => {
-          const materialRef = useRef();
+        // --- 增强版：超感星系背景 ---
+        const DeepSpaceGalaxy = () => {
+          const groupRef = useRef(null);
+
+          // 极缓慢的背景旋转
+          useFrame((state) => {
+            if (groupRef.current) {
+              groupRef.current.rotation.y = state.clock.elapsedTime * 0.01;
+              groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.05) * 0.1;
+            }
+          });
+
+          return (
+            <group ref={groupRef}>
+              {/* 1. 基础静态星场 */}
+              <Stars radius={400} depth={50} count={6000} factor={1.5} saturation={0} fade speed={0.05} />
+              
+              {/* 2. 星系星云云雾 (Nebula) */}
+              <Sparkles count={35} scale={600} size={45} speed={0.1} opacity={0.3} color="#1e3a8a" />
+              <Sparkles count={25} scale={450} size={35} speed={0.15} opacity={0.2} color="#7e22ce" />
+              <Sparkles count={20} scale={350} size={25} speed={0.2} opacity={0.25} color="#0ea5e9" />
+              
+              {/* 3. 星系核心 (Galaxy Core) */}
+              <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
+                <group position={[150, 80, -500]}>
+                   <mesh scale={[180, 180, 180]}>
+                     <sphereGeometry args={[1, 32, 32]} />
+                     <meshBasicMaterial color="#4338ca" transparent opacity={0.15} blending={THREE.AdditiveBlending} />
+                   </mesh>
+                   <mesh scale={[40, 40, 40]}>
+                     <sphereGeometry args={[1, 16, 16]} />
+                     <meshBasicMaterial color="#e0e7ff" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
+                   </mesh>
+                   <pointLight intensity={80} distance={2000} color="#818cf8" />
+                </group>
+              </Float>
+
+              {/* 4. 微弱的星系尘埃带 */}
+              <Sparkles count={50} scale={[800, 50, 800]} size={3} speed={0.3} opacity={0.4} color="#ffffff" />
+
+              {/* 5. 远古星座连线 */}
+              <Constellations />
+            </group>
+          );
+        };
+
+        // --- 幽灵星座连线 ---
+        const Constellations = () => {
+          const lineGeom = useMemo(() => {
+            const points = [];
+            const radius = 650;
+            const count = 15; 
+            
+            for (let i = 0; i < count; i++) {
+              const phi = Math.random() * Math.PI;
+              const theta = Math.random() * Math.PI * 2;
+              const center = new THREE.Vector3().setFromSphericalCoords(radius, phi, theta);
+              
+              let prev = center.clone();
+              const segments = 2 + Math.floor(Math.random() * 3);
+              
+              for (let j = 0; j < segments; j++) {
+                const next = prev.clone().add(new THREE.Vector3(
+                  (Math.random() - 0.5) * 150,
+                  (Math.random() - 0.5) * 150,
+                  (Math.random() - 0.5) * 150
+                )).normalize().multiplyScalar(radius);
+                
+                points.push(prev.clone(), next.clone());
+                prev = next;
+              }
+            }
+            return new THREE.BufferGeometry().setFromPoints(points);
+          }, []);
+
+          return (
+            <lineSegments geometry={lineGeom}>
+              <lineBasicMaterial color="#6366f1" transparent opacity={0.03} blending={THREE.AdditiveBlending} depthWrite={false} />
+            </lineSegments>
+          );
+        };
+
+        // --- 单个柱状图组件 ---
+        const Bar = ({ item, index, total, progress, active, thickness, labelOffset }) => {
+          const meshRef = useRef(null);
           const growth = Math.max(0, Math.min(1, progress - index));
-          const height = Math.max(0.01, item.value * 0.1 * growth);
-          const xPos = (index - (total - 1) / 2) * 3.5;
+          
+          const labelOpacity = THREE.MathUtils.smoothstep(growth, 0, 0.2);
+          const labelScale = THREE.MathUtils.lerp(0.6, 1, THREE.MathUtils.smoothstep(growth, 0, 0.3));
+          
+          const targetHeight = item.value * SCALE_FACTOR;
+          const currentHeight = Math.max(0.1, targetHeight * growth);
+          
+          const labelBaseY = Math.max(labelOffset, currentHeight + labelOffset);
+          
+          const totalWidth = (total - 1) * BAR_SPACING;
+          const xPos = (index * BAR_SPACING) - (totalWidth / 2);
 
-          useFrame(() => {
-            if (materialRef.current) {
-              const emissive = active ? 3.0 : (progress >= index + 1 ? 0.5 : 0);
-              materialRef.current.emissiveIntensity = THREE.MathUtils.lerp(materialRef.current.emissiveIntensity, emissive, 0.1);
+          useFrame((state) => {
+            if (meshRef.current) {
+              const material = meshRef.current.material;
+              const pulse = active ? Math.sin(state.clock.elapsedTime * 6) * 0.15 + 0.25 : 0.05;
+              material.emissiveIntensity = THREE.MathUtils.lerp(material.emissiveIntensity, pulse, 0.1);
             }
           });
 
           return (
             <group position={[xPos, 0, 0]}>
-              <mesh geometry={PLANE_GEOM} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
-                <meshBasicMaterial color={item.color} transparent opacity={0.1 * Math.min(1, growth * 2)} />
+              <mesh 
+                ref={meshRef}
+                scale={[thickness, currentHeight, thickness]} 
+                position={[0, currentHeight / 2, 0]}
+                castShadow
+                receiveShadow
+              >
+                <boxGeometry args={[3.5, 1, 3.5]} />
+                <meshStandardMaterial 
+                  color={item.color} 
+                  emissive={item.color}
+                  emissiveIntensity={0.05}
+                  roughness={0.1}
+                  metalness={0.8}
+                />
               </mesh>
-              <mesh geometry={BOX_GEOM} scale={[1, height, 1]} position={[0, height / 2, 0]}>
-                <meshStandardMaterial ref={materialRef} color={item.color} emissive={item.color} roughness={0.2} metalness={0.8} transparent opacity={Math.min(1, growth * 2)} />
-              </mesh>
-              {growth > 0.1 && (
-                <Billboard position={[0, item.value * 0.1 + 4, 0]}>
-                  <Text position={[0, 2.2, 0]} fontSize={2.5} fillOpacity={Math.min(1, growth * 2)}>{item.flag}</Text>
-                  <Text position={[0, 0.5, 0]} fontSize={0.7} fontWeight="bold" color="#fff" fillOpacity={Math.min(1, growth * 2)}>{item.name}</Text>
-                  <Text position={[0, -0.8, 0]} fontSize={1.4} fontWeight="900" color={active ? "#fff" : item.color} fillOpacity={Math.min(1, growth * 2)}>{(item.value * growth).toFixed(1)}</Text>
+
+              {progress > index && (
+                <Billboard position={[0, labelBaseY, 0]}>
+                  <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
+                    <group scale={labelScale}>
+                      <Text position={[0, 2.5, 0]} fontSize={1.6} fillOpacity={labelOpacity} anchorX="center">{item.flag}</Text>
+                      <Text position={[0, 1.2, 0]} fontSize={0.6} fontWeight="bold" color="#ffffff" fillOpacity={labelOpacity} anchorX="center">{item.name}</Text>
+                      <Text position={[0, 0, 0]} fontSize={1.4} fontWeight="black" color={active ? "#ffffff" : item.color} fillOpacity={labelOpacity} anchorX="center">
+                        {Math.round(item.value * growth).toLocaleString()}
+                      </Text>
+                    </group>
+                  </Float>
                 </Billboard>
               )}
             </group>
           );
         };
 
-        const LineNode = ({ item, prevItem, index, total, progress, active }) => {
-          const growth = Math.max(0, Math.min(1, progress - index));
-          const targetY = item.value * 0.1;
-          const xPos = (index - (total - 1) / 2) * 3.5;
-          const prevX = index > 0 ? (index - 1 - (total - 1) / 2) * 3.5 : xPos;
-          const prevY = prevItem ? prevItem.value * 0.1 : 0;
+        // --- 摄像机控制器 ---
+        const CameraController = ({ view, progress, data, isPlaying, camAngle, camDistance, autoRotate }) => {
+          const { camera, size } = useThree();
+          const controlsRef = useRef(null);
+          const targetPos = useMemo(() => new THREE.Vector3(), []);
+          const lookAtTarget = useMemo(() => new THREE.Vector3(), []);
+          
+          const total = data.length;
+          const totalWidth = (total - 1) * BAR_SPACING;
+          const maxHeight = data[total - 1].value * SCALE_FACTOR;
 
-          const segment = useMemo(() => {
-            if (!prevItem || index === 0 || growth <= 0) return null;
-            const start = new THREE.Vector3(prevX, prevY, 0);
-            const end = new THREE.Vector3(xPos, targetY, 0);
-            const currentEnd = start.clone().lerpVectors(start, end, growth * (2 - growth));
-            const direction = new THREE.Vector3().subVectors(currentEnd, start);
-            const length = direction.length();
-            if (length < 0.01) return null;
-            const midpoint = new THREE.Vector3().addVectors(start, currentEnd).multiplyScalar(0.5);
-            const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
-            return { midpoint, quaternion, length };
-          }, [prevItem, index, prevX, prevY, xPos, targetY, growth]);
+          useFrame((state) => {
+            if (!controlsRef.current) return;
+            const controls = controlsRef.current;
+            
+            const currentActiveIdx = Math.max(0, Math.min(total - 1, progress - 0.5));
+            const floorIdx = Math.floor(currentActiveIdx);
+            const ceilIdx = Math.min(total - 1, floorIdx + 1);
+            const alpha = currentActiveIdx - floorIdx;
+            
+            const heightAtFocus = (data[floorIdx].value + (data[ceilIdx].value - data[floorIdx].value) * alpha) * SCALE_FACTOR;
+            const xPosAtFocus = (currentActiveIdx * BAR_SPACING) - (totalWidth / 2);
+
+            if (view === CameraView.CINEMATIC) {
+              const heightRatio = Math.min(1.0, heightAtFocus / 10);
+              const focusCenterY = SCENE_FLOOR_Y + (heightAtFocus * (0.35 - heightRatio * 0.1)) + 3;
+              const rad = ((camAngle + 30) * Math.PI) / 180;
+              
+              lookAtTarget.set(xPosAtFocus, focusCenterY, 0);
+              controls.target.lerp(lookAtTarget, 0.08);
+
+              if (isPlaying || progress < total) {
+                targetPos.set(
+                  xPosAtFocus + Math.sin(rad) * camDistance, 
+                  focusCenterY + 4, 
+                  Math.cos(rad) * camDistance
+                );
+                camera.position.lerp(targetPos, 0.04);
+              }
+              controls.update();
+            } 
+            else if (view === CameraView.FRONT) {
+              const fovRad = camera.fov * (Math.PI / 180);
+              const aspect = size.width / size.height;
+              const contentHeight = maxHeight + 10;
+              const contentWidth = totalWidth + 10;
+              
+              const availableHeightRatio = 0.5;
+              const distByWidth = (contentWidth / 2) / Math.tan(fovRad / 2) / aspect;
+              const distByHeight = (contentHeight / 2) / Math.tan(fovRad / 2) / availableHeightRatio;
+              
+              const finalDist = Math.max(distByWidth, distByHeight, camDistance * 1.5);
+              const targetY = SCENE_FLOOR_Y + (maxHeight / 2) - 1;
+
+              const rotationSpeed = autoRotate ? state.clock.elapsedTime * 0.1 : 0;
+              const rotAngle = (camAngle * Math.PI / 180) + rotationSpeed;
+
+              lookAtTarget.set(0, targetY, 0);
+              targetPos.set(
+                Math.sin(rotAngle) * finalDist,
+                targetY + (finalDist * 0.2),
+                Math.cos(rotAngle) * finalDist
+              );
+              
+              controls.target.lerp(lookAtTarget, 0.06);
+              camera.position.lerp(targetPos, 0.06);
+              controls.update();
+            }
+          });
 
           return (
-            <group>
-              {segment && (
-                <mesh position={segment.midpoint} quaternion={segment.quaternion}>
-                  <cylinderGeometry args={[0.1, 0.1, segment.length, 12]} />
-                  <meshStandardMaterial color={item.color} emissive={item.color} emissiveIntensity={active ? 10 : 2} transparent opacity={Math.min(1, growth * 2)} />
-                </mesh>
-              )}
-              {growth > 0.1 && (
-                <group position={[xPos, targetY, 0]}>
-                  <Sphere args={[0.35, 32, 32]}><meshStandardMaterial color={item.color} emissive={item.color} emissiveIntensity={active ? 10 : 1} metalness={1} roughness={0} /></Sphere>
-                  <Billboard position={[0, 5, 0]}>
-                    <Text position={[0, 2.5, 0]} fontSize={3}>{item.flag}</Text>
-                    <Text position={[0, 0.6, 0]} fontSize={0.8} fontWeight="black" color="#fff">{item.name}</Text>
-                    <Text position={[0, -1, 0]} fontSize={1.8} fontWeight="black" color={active ? "#fff" : item.color}>{(item.value * (progress > index + 1 ? 1 : growth)).toFixed(1)}</Text>
-                  </Billboard>
-                </group>
-              )}
-            </group>
+            <OrbitControls 
+              ref={controlsRef} 
+              makeDefault 
+              enableDamping 
+              dampingFactor={0.05} 
+              minDistance={5} 
+              maxDistance={2500} 
+              maxPolarAngle={Math.PI / 2.02} 
+            />
           );
         };
 
-        const CameraController = ({ view, progress, data, isPlaying, camAngle, camDistance }) => {
-          const { camera } = useThree();
-          const controlsRef = useRef();
-          const total = data.length;
+        const SceneContent = (props) => {
+          const activeIndex = Math.floor(props.progress);
 
-          useFrame(() => {
-            if (!controlsRef.current) return;
-            const currentIdx = Math.max(0, Math.min(total - 1, progress));
-            const xPos = (currentIdx - (total - 1) / 2) * 3.5;
-            const height = data[Math.floor(currentIdx)].value * 0.1;
+          return (
+            <React.Fragment>
+              {/* 纯净的宇宙黑背景 */}
+              <color attach="background" args={['#000000']} />
+              <Suspense fallback={null}>
+                <Environment preset="night" />
+              </Suspense>
 
-            if (view === CameraView.CINEMATIC) {
-              const rad = (camAngle * Math.PI) / 180;
-              controlsRef.current.target.lerp(new THREE.Vector3(xPos, height / 2 + 2, 0), 0.05);
-              camera.position.lerp(new THREE.Vector3(xPos + Math.sin(rad) * camDistance, height / 2 + 10, Math.cos(rad) * camDistance), 0.05);
-              controlsRef.current.update();
-            } else if (view === CameraView.PANORAMA) {
-              camera.position.lerp(new THREE.Vector3(0, 30, 80), 0.04);
-              controlsRef.current.target.lerp(new THREE.Vector3(0, 5, 0), 0.04);
-              controlsRef.current.update();
-            } else if (view !== CameraView.FREE) {
-              const targets = {
-                [CameraView.FRONT]: [0, 15, 70],
-                [CameraView.TOP]: [0, 100, 0.1],
-                [CameraView.SIDE]: [-60, 10, 0]
-              };
-              const t = targets[view];
-              if (t) {
-                camera.position.lerp(new THREE.Vector3(...t), 0.05);
-                controlsRef.current.target.lerp(new THREE.Vector3(0, 5, 0), 0.05);
-                controlsRef.current.update();
-              }
-            }
-          });
-          return <OrbitControls ref={controlsRef} makeDefault enableDamping dampingFactor={0.05} enabled={view === CameraView.FREE || !isPlaying || view === CameraView.PANORAMA} />;
+              {/* 超感星系背景层 */}
+              <DeepSpaceGalaxy />
+
+              <fog attach="fog" args={['#000000', 300, 1200]} />
+              
+              {props.showGrid && (
+                <group position={[0, SCENE_FLOOR_Y, 0]}>
+                  <Grid 
+                    infiniteGrid 
+                    fadeDistance={200} 
+                    fadeStrength={4} 
+                    cellSize={5} 
+                    sectionSize={25} 
+                    sectionThickness={1.5} 
+                    sectionColor="#1e293b" 
+                    cellColor="#020617" 
+                  />
+                </group>
+              )}
+
+              <PerspectiveCamera makeDefault position={[0, 60, 200]} fov={30} />
+              <CameraController {...props} />
+              
+              <directionalLight position={[100, 100, 100]} intensity={1.5} />
+              <spotLight position={[-50, 150, 50]} intensity={3} angle={0.3} penumbra={1} castShadow />
+              <ambientLight intensity={0.4} />
+
+              <group position={[0, SCENE_FLOOR_Y, 0]}>
+                <ContactShadows opacity={0.7} scale={400} blur={2.5} far={40} resolution={1024} color="#000" position={[0, -0.01, 0]} />
+                {props.data.map((item, idx) => (
+                  <Bar 
+                    key={item.id} 
+                    item={item} 
+                    index={idx} 
+                    total={props.data.length} 
+                    progress={props.progress} 
+                    active={activeIndex === idx} 
+                    thickness={props.thickness} 
+                    labelOffset={props.labelOffset}
+                  />
+                ))}
+              </group>
+              <BakeShadows />
+            </React.Fragment>
+          );
         };
 
-        // --- UI 组件 (功能全复原) ---
+        // --- 悬浮控制界面 ---
         const ControlsUI = (props) => {
           const [showSettings, setShowSettings] = useState(false);
+          const progressPercent = Math.min(100, Math.round((props.progress / props.maxProgress) * 100));
+          const currentRank = props.totalItems - Math.min(props.totalItems - 1, props.currentIndex);
+
           return (
-            <div className="w-full flex flex-col items-center bg-[#050505] border-t border-white/5 shadow-2xl">
-              <div className="w-full h-1.5 bg-white/5 relative cursor-pointer group">
-                <div className="absolute left-0 top-0 h-full bg-blue-500 z-10 transition-all duration-300" style={{ width: `${(props.progress / props.total) * 100}%` }} />
-                <input type="range" min="0" max={props.total} step="0.01" value={props.progress} onChange={(e) => props.setProgress(parseFloat(e.target.value))} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl flex flex-col items-center bg-zinc-950/80 backdrop-blur-3xl border border-white/5 shadow-[0_35px_60px_-15px_rgba(0,0,0,1)] rounded-[2.5rem] overflow-visible transition-all">
+              <div className="w-[calc(100%-4rem)] h-1 bg-white/5 relative group cursor-pointer overflow-hidden mt-5 rounded-full">
+                <div 
+                  className="absolute left-0 top-0 h-full bg-indigo-500 z-10 shadow-[0_0_15px_rgba(99,102,241,0.8)]" 
+                  style={{ width: `${(props.progress / props.maxProgress) * 100}%` }} 
+                />
+                <input 
+                  type="range" min="0" max={props.maxProgress} step="0.0001" value={props.progress} 
+                  onChange={(e) => { props.setProgress(parseFloat(e.target.value)); props.setIsPlaying(false); }} 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" 
+                />
               </div>
-              <div className="w-full max-w-7xl px-8 py-5 flex items-center justify-between gap-8 relative">
-                <div className="flex items-center gap-5">
-                  <button onClick={() => props.setIsPlaying(!props.isPlaying)} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all transform active:scale-90 ${props.isPlaying ? 'bg-white text-black' : 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]'}`}>
-                    {props.isPlaying ? <Pause fill="currentColor" size={24} /> : <Play fill="currentColor" size={24} className="ml-1" />}
+
+              <div className="w-full px-8 py-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => { if (props.progress >= props.maxProgress - 0.05) props.onReset(); else props.setIsPlaying(!props.isPlaying); }} 
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 ${props.isPlaying ? 'bg-white text-black' : 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20'}`}
+                  >
+                    {props.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
                   </button>
-                  <button onClick={() => { props.setProgress(0); props.setIsPlaying(true); props.setView(CameraView.CINEMATIC); }} className="p-3 text-white/20 hover:text-white hover:bg-white/5 rounded-xl transition-all" title="重置播放"><RotateCcw size={20} /></button>
+                  <button 
+                    onClick={props.onReset} 
+                    className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                  >
+                    <RotateCcw size={16} />
+                  </button>
                 </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/5">
-                     <button onClick={() => props.setVisMode('BAR')} className={`p-2.5 rounded-lg transition-all ${props.visMode === 'BAR' ? 'bg-white text-black' : 'text-white/30 hover:text-white'}`} title="柱状图模式"><BarChart3 size={20} /></button>
-                     <button onClick={() => props.setVisMode('LINE')} className={`p-2.5 rounded-lg transition-all ${props.visMode === 'LINE' ? 'bg-white text-black' : 'text-white/30 hover:text-white'}`} title="折线图模式"><TrendingUp size={20} /></button>
+
+                <div className="flex items-center flex-grow justify-center gap-4">
+                  <div className="hidden sm:flex items-center px-4 border-r border-white/10 group min-w-[180px]">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-indigo-400 bg-indigo-400/10 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                          Rank {currentRank}
+                        </span>
+                        <span className="text-sm font-black text-white italic truncate max-w-[110px]">
+                          {props.currentItem?.name || 'End Sequence'}
+                        </span>
+                        {props.currentItem && <span className="text-lg leading-none">{props.currentItem.flag}</span>}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center bg-white/5 p-1.5 rounded-2xl gap-1 border border-white/5 overflow-x-auto no-scrollbar">
+
+                  <div className="flex bg-black/50 p-1.5 rounded-2xl border border-white/5">
                     {[ 
-                      { id: CameraView.CINEMATIC, icon: <Camera size={16} />, label: '智能跟随' }, 
-                      { id: CameraView.PANORAMA, icon: <Layout size={16} />, label: '全局全景' }, 
-                      { id: CameraView.FREE, icon: <MousePointer2 size={16} />, label: '自由视角' }, 
-                      { id: CameraView.FRONT, icon: <Monitor size={16} />, label: '正前视角' }
+                      { id: CameraView.CINEMATIC, icon: <Camera size={13} />, label: '影院' }, 
+                      { id: CameraView.FRONT, icon: <Monitor size={13} />, label: '全景' }, 
+                      { id: CameraView.FREE, icon: <MousePointer2 size={13} />, label: '自由' }
                     ].map((v) => (
-                      <button key={v.id} onClick={() => props.setView(v.id)} className={`flex items-center gap-2 px-5 py-3 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap ${props.view === v.id ? 'bg-white text-black shadow-lg' : 'text-white/30 hover:text-white hover:bg-white/5'}`}>
-                        {v.icon}<span className="hidden md:inline">{v.label}</span>
+                      <button 
+                        key={v.id} 
+                        onClick={() => props.setView(v.id)} 
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-wide transition-all ${props.view === v.id ? 'bg-indigo-100 text-indigo-950 shadow-lg' : 'text-zinc-500 hover:text-zinc-200'}`}
+                      >
+                        {v.icon}<span>{v.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <button onClick={() => setShowSettings(!showSettings)} className={`p-3.5 rounded-2xl transition-all border ${showSettings ? 'bg-blue-600 border-blue-400 text-white' : 'bg-white/5 border-white/5 text-white/40 hover:text-white'}`}>{showSettings ? <X size={22} /> : <Settings2 size={22} />}</button>
-                </div>
-
-                {showSettings && (
-                  <div className="absolute bottom-[calc(100%+1rem)] right-8 w-80 bg-[#0c0c0c] border border-white/10 p-8 rounded-3xl shadow-2xl z-50 flex flex-col gap-8 animate-in slide-in-from-bottom-4 duration-300">
-                    <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] border-b border-white/10 pb-4">渲染与性能配置</h3>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-white/50 uppercase">播放速率</span><span className="text-xs font-black text-blue-400">{props.speed.toFixed(1)}x</span></div>
-                      <input type="range" min="0.2" max="3.0" step="0.1" value={props.speed} onChange={(e) => props.setSpeed(parseFloat(e.target.value))} className="w-full accent-blue-500 h-1 bg-white/10 rounded-full appearance-none cursor-pointer" />
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-white/50 uppercase">观测偏角</span><span className="text-xs font-black text-blue-400">{props.angle}°</span></div>
-                      <input type="range" min="0" max="360" step="1" value={props.angle} onChange={(e) => props.setAngle(parseInt(e.target.value))} className="w-full accent-blue-500 h-1 bg-white/10 rounded-full appearance-none cursor-pointer" />
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-white/50 uppercase">相机距离</span><span className="text-xs font-black text-blue-400">{props.distance}m</span></div>
-                      <input type="range" min="15" max="100" step="1" value={props.distance} onChange={(e) => props.setDistance(parseInt(e.target.value))} className="w-full accent-blue-500 h-1 bg-white/10 rounded-full appearance-none cursor-pointer" />
-                    </div>
+                <div className="flex items-center gap-4 relative">
+                  <div className="hidden md:flex flex-col items-end">
+                    <span className="text-[11px] font-black text-indigo-500 tabular-nums tracking-widest">{progressPercent}%</span>
                   </div>
-                )}
+                  <button onClick={() => setShowSettings(!showSettings)} className={`w-9 h-9 rounded-full border border-white/10 flex items-center justify-center transition-all ${showSettings ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}>
+                    {showSettings ? <X size={18} /> : <Settings2 size={18} />}
+                  </button>
+
+                  {showSettings && (
+                    <div className="absolute bottom-[calc(100%+2rem)] right-0 w-80 bg-zinc-950/95 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_100px_rgba(0,0,0,1)] z-50 flex flex-col gap-5 animate-in fade-in zoom-in-95 slide-in-from-bottom-6 duration-300">
+                      <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                        <BarChart3 size={16} className="text-indigo-500" />
+                        <h3 className="text-[11px] font-black text-zinc-100 uppercase tracking-[0.2em]">系统调优</h3>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
+                          <span>播放倍速</span>
+                          <span className="text-indigo-400">{props.speed.toFixed(1)}x</span>
+                        </div>
+                        <input type="range" min="0.1" max="4.0" step="0.1" value={props.speed} onChange={(e) => props.setSpeed(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
+                          <span className="flex items-center gap-1"><MoveUp size={11} /> 标签高度</span>
+                          <span className="text-indigo-400">{props.labelOffset.toFixed(1)}m</span>
+                        </div>
+                        <input type="range" min="0.5" max="8.0" step="0.1" value={props.labelOffset} onChange={(e) => props.setLabelOffset(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
+                          <span>环绕角度</span>
+                          <span className="text-indigo-400">{props.angle}°</span>
+                        </div>
+                        <input type="range" min="0" max="360" step="1" value={props.angle} onChange={(e) => props.setAngle(parseInt(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
+                          <span>观察距离</span>
+                          <span className="text-indigo-400">{props.distance}m</span>
+                        </div>
+                        <input type="range" min="10" max="150" step="1" value={props.distance} onChange={(e) => props.setDistance(parseInt(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-3">
+                        <button 
+                          onClick={() => props.setShowGrid(!props.showGrid)}
+                          className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all ${props.showGrid ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-inner' : 'bg-white/5 text-zinc-500'}`}
+                        >
+                          宇宙网格
+                        </button>
+                        <button 
+                          onClick={() => props.setAutoRotate(!props.autoRotate)}
+                          className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all ${props.autoRotate ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-inner' : 'bg-white/5 text-zinc-500'}`}
+                        >
+                          自动航行
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="h-6 w-full" />
             </div>
           );
         };
@@ -323,73 +550,127 @@
           const [progress, setProgress] = useState(0);
           const [isPlaying, setIsPlaying] = useState(true);
           const [view, setView] = useState(CameraView.CINEMATIC);
-          const [visMode, setVisMode] = useState(CONFIG.ui.defaultMode);
-          const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
-          const [camAngle, setCamAngle] = useState(30); 
-          const [camDistance, setCamDistance] = useState(45); 
+          
+          // Settings State
+          const [playbackSpeed, setPlaybackSpeed] = useState(1.2); 
+          const [camAngle, setCamAngle] = useState(0); 
+          const [camDistance, setCamDistance] = useState(48); 
+          const [thickness, setThickness] = useState(1.0);
+          const [labelOffset, setLabelOffset] = useState(1.8); 
+          const [showGrid, setShowGrid] = useState(true);
+          const [autoRotate, setAutoRotate] = useState(true); 
 
           const totalItems = CONFIG.data.length;
+          const maxProgress = totalItems;
+          
+          const currentIndex = Math.floor(progress);
+          const currentItem = CONFIG.data[Math.min(totalItems - 1, currentIndex)];
+
+          const handleReset = () => { 
+            setProgress(0); 
+            setIsPlaying(true); 
+            setView(CameraView.CINEMATIC); 
+            setAutoRotate(true);
+          };
 
           useEffect(() => {
             if (!isPlaying) return;
+            let frameId;
             const animate = () => {
-              setProgress(prev => {
-                let next = prev + (0.004 * playbackSpeed);
-                if (next >= totalItems) { setIsPlaying(false); setView(CameraView.PANORAMA); return totalItems; }
+              setProgress((prev) => {
+                const next = prev + (0.005 * playbackSpeed);
+                if (next >= maxProgress) { 
+                  setIsPlaying(false); 
+                  setTimeout(() => {
+                     setView(v => v === CameraView.CINEMATIC ? CameraView.FRONT : v);
+                     setAutoRotate(true);
+                  }, 300);
+                  return maxProgress; 
+                }
                 return next;
               });
-              requestAnimationFrame(animate);
+              frameId = requestAnimationFrame(animate);
             };
-            const id = requestAnimationFrame(animate);
-            return () => cancelAnimationFrame(id);
-          }, [isPlaying, totalItems, playbackSpeed]);
+            frameId = requestAnimationFrame(animate);
+            return () => cancelAnimationFrame(frameId);
+          }, [isPlaying, maxProgress, playbackSpeed]);
 
           return (
-            <div className="flex flex-col w-full h-[100dvh] bg-black text-white select-none">
-              <div className="relative flex-grow w-full bg-black overflow-hidden">
-                <div className="absolute top-0 left-0 p-8 z-10 pointer-events-none">
-                  <h1 className="text-white text-xl md:text-3xl font-black tracking-tighter uppercase italic">{CONFIG.ui.title} <span className="text-blue-500">{CONFIG.ui.highlightTitle}</span></h1>
-                  <p className="text-blue-400 text-[9px] font-bold uppercase tracking-[0.4em] opacity-50 uppercase">{CONFIG.ui.subTitle}</p>
-                </div>
-                
-                <Canvas dpr={[1, 2]}>
-                  <Environment preset="night" /><fog attach="fog" args={['#000', 30, 400]} />
-                  <CameraController view={view} progress={progress} data={CONFIG.data} isPlaying={isPlaying} camAngle={camAngle} camDistance={camDistance} />
-                  <directionalLight position={[10, 20, 10]} intensity={1.5} />
-                  <group>
-                    <Grid infiniteGrid sectionColor="#111" cellColor="#050505" />
-                    {visMode === 'BAR' ? 
-                      CONFIG.data.map((item, idx) => <Bar key={item.id} item={item} index={idx} total={totalItems} progress={progress} active={Math.floor(progress) === idx} />) :
-                      CONFIG.data.map((item, idx) => <LineNode key={item.id} item={item} prevItem={idx > 0 ? CONFIG.data[idx-1] : null} index={idx} total={totalItems} progress={progress} active={Math.floor(progress) === idx} />)
-                    }
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-                      <planeGeometry args={[1000, 1000]} />
-                      <MeshReflectorMaterial color="#080808" metalness={0.5} mirror={0.8} />
-                    </mesh>
-                    <ContactShadows opacity={0.4} scale={200} blur={3} color="#000" />
-                  </group>
+            <div className="flex flex-col w-full h-[100dvh] bg-black text-white font-sans select-none overflow-hidden relative">
+              <div className="absolute inset-0 z-0">
+                <Canvas 
+                  shadows 
+                  gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+                  camera={{ fov: 30, near: 0.1, far: 3000 }}
+                >
+                  <PerformanceMonitor />
+                  <AdaptiveDpr />
+                  <AdaptiveEvents />
+                  <SceneContent 
+                    data={CONFIG.data} 
+                    progress={progress} 
+                    view={view} 
+                    isPlaying={isPlaying} 
+                    camAngle={camAngle} 
+                    camDistance={camDistance}
+                    thickness={thickness}
+                    labelOffset={labelOffset}
+                    showGrid={showGrid}
+                    autoRotate={autoRotate}
+                  />
                 </Canvas>
+              </div>
 
-                <div className="absolute bottom-32 left-8 hidden md:block">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-white/30 uppercase">当前焦点</span>
-                    <span className="text-lg font-black text-blue-500 italic uppercase">
-                      {CONFIG.data[Math.min(totalItems-1, Math.floor(progress))]?.name || '展示完毕'}
-                    </span>
-                  </div>
+              <div className="relative top-0 left-0 p-10 md:p-14 z-10 pointer-events-none w-full flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,1)] animate-pulse" />
+                  <span className="text-[11px] font-black tracking-[0.8em] uppercase text-indigo-400/80">{CONFIG.ui.meta}</span>
+                </div>
+                <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none text-white drop-shadow-[0_15px_15px_rgba(0,0,0,0.9)]">
+                  {CONFIG.ui.title}
+                </h1>
+                <p className="text-zinc-500 text-xs md:text-sm font-bold tracking-[0.3em] opacity-60 uppercase">
+                  {CONFIG.ui.subTitle}
+                </p>
+              </div>
+
+              <div className="z-30 pointer-events-auto">
+                <ControlsUI 
+                  isPlaying={isPlaying} setIsPlaying={setIsPlaying} 
+                  progress={progress} setProgress={setProgress} 
+                  maxProgress={maxProgress} view={view} setView={setView} 
+                  speed={playbackSpeed} setSpeed={setPlaybackSpeed} 
+                  angle={camAngle} setAngle={setCamAngle} 
+                  distance={camDistance} setDistance={setCamDistance} 
+                  thickness={thickness} setThickness={setThickness}
+                  labelOffset={labelOffset} setLabelOffset={setLabelOffset}
+                  showGrid={showGrid} setShowGrid={setShowGrid}
+                  autoRotate={autoRotate} setAutoRotate={setAutoRotate}
+                  onReset={handleReset}
+                  currentItem={currentItem}
+                  currentIndex={currentIndex}
+                  totalItems={totalItems}
+                />
+              </div>
+
+              <div className="absolute top-1/2 left-10 -translate-y-1/2 flex flex-col gap-10 opacity-10 pointer-events-none hidden lg:flex">
+                <div className="flex flex-col gap-2">
+                  <div className="w-16 h-0.5 bg-indigo-500" />
+                  <span className="text-[9px] font-bold tracking-widest uppercase">Asia Nations</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="w-16 h-0.5 bg-zinc-100" />
+                  <span className="text-[9px] font-bold tracking-widest uppercase">GDP Value ($B)</span>
                 </div>
               </div>
-              <ControlsUI 
-                isPlaying={isPlaying} setIsPlaying={setIsPlaying} progress={progress} setProgress={setProgress} 
-                total={totalItems} view={view} setView={setView} visMode={visMode} setVisMode={setVisMode} 
-                speed={playbackSpeed} setSpeed={setPlaybackSpeed} angle={camAngle} setAngle={setCamAngle} 
-                distance={camDistance} setDistance={setCamDistance} 
-              />
             </div>
           );
         };
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+          ReactDOM.createRoot(rootElement).render(<App />);
+        }
     </script>
 </body>
 </html>
