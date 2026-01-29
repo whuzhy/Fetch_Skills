@@ -163,3 +163,7 @@
 新增：jthack/ffuf_claude_skill (★102)
 --- 2026-01-29 00:39:39 ---
 
+[Other]
+新增：rominirani/antigravity-skills (★102)
+--- 2026-01-29 10:08:23 ---
+
