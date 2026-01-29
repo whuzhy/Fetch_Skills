@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 数据可视化配置版</title>
+    <title>3D 数据看板 - 最终补强版</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -12,6 +13,8 @@
         body { margin: 0; padding: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #000; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 10px; }
+        /* 避免移动端弹性滚动干扰 3D 交互 */
+        html, body { position: fixed; width: 100%; height: 100%; }
     </style>
 
     <script type="importmap">
@@ -34,9 +37,10 @@
 
     <script type="text/babel" data-type="module" data-presets="react">
         /** @jsx React.createElement */
-        import React, { useRef, useMemo, useState, useEffect } from 'react';
+        /** @jsxFrag React.Fragment */
+        import React, { useRef, useMemo, useState, useEffect, Suspense } from 'react';
         import ReactDOM from 'react-dom/client';
-        import { Canvas, useFrame } from '@react-three/fiber';
+        import { Canvas, useFrame, useThree } from '@react-three/fiber';
         import { 
           OrbitControls, PerspectiveCamera, Environment, ContactShadows, 
           MeshReflectorMaterial, PerformanceMonitor, AdaptiveDpr, AdaptiveEvents,
@@ -46,62 +50,59 @@
         import { Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, Layout, BarChart3, TrendingUp } from 'lucide-react';
 
         // ==========================================
-        // 核心全局配置 (在这里修改你的内容)
+        // 1. 全局配置区
         // ==========================================
+        
         const CONFIG = {
           ui: {
-            title: "三维",
-            highlightTitle: "动态数据看板",
-            subTitle: "HIGH-END VISUALIZATION ENGINE",
-            defaultMode: 'BAR' // 可选 'BAR' (柱状图) 或 'LINE' (折线图)
+            title: "2024年",
+            highlightTitle: "中国省份 GDP TOP 10",
+            subTitle: "数据来源：各省统计局初步核算数 (单位：万亿元)",
+            defaultMode: 'BAR' // 推荐使用柱状图展示排名对比
           },
           data: [
-            { id: '1', name: '越南', value: 3.5, unit: '百万吨', color: '#ff4d4d', flag: '🇻🇳' },
-            { id: '2', name: '韩国', value: 4.2, unit: '百万吨', color: '#4d79ff', flag: '🇰🇷' },
-            { id: '3', name: '日本', value: 6.1, unit: '百万吨', color: '#ffffff', flag: '🇯🇵' },
-            { id: '4', name: '墨西哥', value: 8.9, unit: '百万吨', color: '#006847', flag: '🇲🇽' },
-            { id: '5', name: '德国', value: 9.2, unit: '百万吨', color: '#000000', flag: '🇩🇪' },
-            { id: '6', name: '俄罗斯', value: 11.5, unit: '百万吨', color: '#1e88e5', flag: '🇷🇺' },
-            { id: '7', name: '巴西', value: 19.8, unit: '百万吨', color: '#ffeb3b', flag: '🇧🇷' },
-            { id: '8', name: '美国', value: 33.2, unit: '百万吨', color: '#283593', flag: '🇺🇸' },
-            { id: '9', name: '中国', value: 88.3, unit: '百万吨', color: '#d32f2f', flag: '🇨🇳' },
-          ].sort((a, b) => a.value - b.value)
+            { id: '10', name: '上海', value: 4.90, unit: '万亿', color: '#9c27b0', flag: '🏙️' },
+            { id: '9',  name: '安徽', value: 4.95, unit: '万亿', color: '#795548', flag: '🌄' },
+            { id: '8',  name: '福建', value: 5.56, unit: '万亿', color: '#00bcd4', flag: '🌊' },
+            { id: '7',  name: '湖北', value: 5.75, unit: '万亿', color: '#4caf50', flag: '🦢' },
+            { id: '6',  name: '河南', value: 6.05, unit: '万亿', color: '#ffeb3b', flag: '🌾' },
+            { id: '5',  name: '四川', value: 6.30, unit: '万亿', color: '#ff9800', flag: '🐼' },
+            { id: '4',  name: '浙江', value: 8.70, unit: '万亿', color: '#2196f3', flag: '🍵' },
+            { id: '3',  name: '山东', value: 9.60, unit: '万亿', color: '#3f51b5', flag: '⛰️' },
+            { id: '2',  name: '江苏', value: 13.28, unit: '万亿', color: '#f44336', flag: '🏮' },
+            { id: '1',  name: '广东', value: 13.92, unit: '万亿', color: '#d32f2f', flag: '🦁' },
+          ].sort((a, b) => a.value - b.value) // 升序排列，让最大的排在最后，动画效果更震撼
         };
 
-        const CameraView = { FREE: 'FREE', FRONT: 'FRONT', TOP: 'TOP', SIDE: 'SIDE', CINEMATIC: 'CINEMATIC', PANORAMA: 'PANORAMA' };
+        const CameraView = { FREE: 'FREE', PANORAMA: 'PANORAMA', CINEMATIC: 'CINEMATIC' };
 
-        // --- 3D 组件 ---
-        const BOX_GEOM = new THREE.BoxGeometry(2, 1, 2);
-        const PLANE_GEOM = new THREE.PlaneGeometry(3.5, 3.5);
-
+        // ==========================================
+        // 2. 3D 子组件
+        // ==========================================
         const Bar = ({ item, index, total, progress, active }) => {
           const materialRef = useRef();
-          const growthProgress = Math.max(0, Math.min(1, progress - index));
-          const isStarted = progress > index;
-          const fullHeight = item.value * 0.1;
-          const currentHeight = Math.max(0.01, fullHeight * growthProgress);
+          const growth = Math.max(0, Math.min(1, progress - index));
+          const height = Math.max(0.01, item.value * 0.1 * growth);
           const xPos = (index - (total - 1) / 2) * 3.5;
 
           useFrame(() => {
             if (materialRef.current) {
-              const targetEmissive = active ? 3.0 : (progress >= index + 1 ? 0.5 : 0);
-              materialRef.current.emissiveIntensity = THREE.MathUtils.lerp(materialRef.current.emissiveIntensity, targetEmissive, 0.1);
+              const emissive = active ? 3 : (progress >= index + 1 ? 0.4 : 0);
+              materialRef.current.emissiveIntensity = THREE.MathUtils.lerp(materialRef.current.emissiveIntensity, emissive, 0.1);
             }
           });
 
           return (
             <group position={[xPos, 0, 0]}>
-              <mesh geometry={PLANE_GEOM} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
-                <meshBasicMaterial color={item.color} transparent opacity={0.1 * Math.min(1, growthProgress * 2)} />
+              <mesh position={[0, height / 2, 0]}>
+                <boxGeometry args={[2, 1, 2]} scale={[1, height, 1]} />
+                <meshStandardMaterial ref={materialRef} color={item.color} emissive={item.color} metalness={0.8} roughness={0.2} transparent opacity={Math.min(1, growth * 2)} />
               </mesh>
-              <mesh geometry={BOX_GEOM} scale={[1, currentHeight, 1]} position={[0, currentHeight / 2, 0]}>
-                <meshStandardMaterial ref={materialRef} color={item.color} emissive={item.color} emissiveIntensity={0} roughness={0.2} metalness={0.8} transparent opacity={Math.min(1, growthProgress * 2)} />
-              </mesh>
-              {isStarted && (
-                <Billboard position={[0, fullHeight + 4, 0]}>
-                  <Text position={[0, 2.2, 0]} fontSize={2.5} fillOpacity={Math.min(1, growthProgress * 2)}>{item.flag}</Text>
-                  <Text position={[0, 0.5, 0]} fontSize={0.7} fontWeight="bold" color="#fff" fillOpacity={Math.min(1, growthProgress * 2)}>{item.name}</Text>
-                  <Text position={[0, -0.8, 0]} fontSize={1.4} fontWeight="900" color={active ? "#fff" : item.color} fillOpacity={Math.min(1, growthProgress * 2)}>{(item.value * growthProgress).toFixed(1)}</Text>
+              {growth > 0.1 && (
+                <Billboard position={[0, item.value * 0.1 + 4, 0]}>
+                  <Text position={[0, 2, 0]} fontSize={2}>{item.flag}</Text>
+                  <Text position={[0, 0.5, 0]} fontSize={0.7} color="#fff">{item.name}</Text>
+                  <Text position={[0, -0.8, 0]} fontSize={1.2} fontWeight="900" color={active ? "#fff" : item.color}>{(item.value * growth).toFixed(1)}</Text>
                 </Billboard>
               )}
             </group>
@@ -109,43 +110,35 @@
         };
 
         const LineNode = ({ item, prevItem, index, total, progress, active }) => {
-          const growthProgress = Math.max(0, Math.min(1, progress - index));
-          const isStarted = progress > index;
-          const targetHeight = item.value * 0.1;
+          const growth = Math.max(0, Math.min(1, progress - index));
+          const targetY = item.value * 0.1;
           const xPos = (index - (total - 1) / 2) * 3.5;
           const prevX = index > 0 ? (index - 1 - (total - 1) / 2) * 3.5 : xPos;
-          const prevHeight = prevItem ? prevItem.value * 0.1 : 0;
+          const prevY = prevItem ? prevItem.value * 0.1 : 0;
 
           const segment = useMemo(() => {
-            if (!prevItem || index === 0 || !isStarted) return null;
-            const start = new THREE.Vector3(prevX, prevHeight, 0);
-            const end = new THREE.Vector3(xPos, targetHeight, 0);
-            const currentEnd = start.clone().lerpVectors(start, end, growthProgress * (2 - growthProgress));
-            const direction = new THREE.Vector3().subVectors(currentEnd, start);
-            const length = direction.length();
-            if (length < 0.01) return null;
-            const midpoint = new THREE.Vector3().addVectors(start, currentEnd).multiplyScalar(0.5);
-            const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
-            return { midpoint, quaternion, length };
-          }, [prevItem, index, prevX, prevHeight, xPos, targetHeight, isStarted, growthProgress]);
+            if (!prevItem || growth <= 0) return null;
+            const start = new THREE.Vector3(prevX, prevY, 0);
+            const end = new THREE.Vector3(xPos, targetY, 0).lerpVectors(start, new THREE.Vector3(xPos, targetY, 0), growth);
+            const dir = new THREE.Vector3().subVectors(end, start);
+            return { pos: new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5), quat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize()), len: dir.length() };
+          }, [prevItem, growth, prevX, prevY, xPos, targetY]);
 
           return (
             <group>
               {segment && (
-                <mesh position={segment.midpoint} quaternion={segment.quaternion}>
-                  <cylinderGeometry args={[0.1, 0.1, segment.length, 12]} />
-                  <meshStandardMaterial color={item.color} emissive={item.color} emissiveIntensity={active ? 10 : 2} metalness={1} roughness={0} transparent opacity={Math.min(1, growthProgress * 2)} />
+                <mesh position={segment.pos} quaternion={segment.quat}>
+                  <cylinderGeometry args={[0.1, 0.1, segment.len, 8]} />
+                  <meshStandardMaterial color={item.color} emissive={item.color} emissiveIntensity={active ? 5 : 1} transparent opacity={Math.min(1, growth * 2)} />
                 </mesh>
               )}
-              {isStarted && (
-                <group position={[xPos, targetHeight, 0]}>
-                  <Sphere args={[0.35, 32, 32]}>
-                    <meshStandardMaterial color={item.color} emissive={item.color} emissiveIntensity={active ? 10 : 1} metalness={1} roughness={0} transparent opacity={Math.min(1, growthProgress * 2)} />
-                  </Sphere>
+              {growth > 0.1 && (
+                <group position={[xPos, targetY, 0]}>
+                  <Sphere args={[0.3, 16, 16]}><meshStandardMaterial color={item.color} emissive={item.color} emissiveIntensity={active ? 10 : 2} /></Sphere>
                   <Billboard position={[0, 5, 0]}>
-                    <Text position={[0, 2.5, 0]} fontSize={3}>{item.flag}</Text>
-                    <Text position={[0, 0.6, 0]} fontSize={0.8} fontWeight="black" color="#fff">{item.name}</Text>
-                    <Text position={[0, -1, 0]} fontSize={1.8} fontWeight="black" color={active ? "#fff" : item.color}>{(item.value * (progress > index + 1 ? 1 : growthProgress)).toFixed(1)}</Text>
+                    <Text position={[0, 2, 0]} fontSize={2.5}>{item.flag}</Text>
+                    <Text position={[0, 0.5, 0]} fontSize={0.8} color="#fff">{item.name}</Text>
+                    <Text position={[0, -0.8, 0]} fontSize={1.5} fontWeight="bold" color={active ? "#fff" : item.color}>{(item.value * (progress > index + 1 ? 1 : growth)).toFixed(1)}</Text>
                   </Billboard>
                 </group>
               )}
@@ -153,87 +146,86 @@
           );
         };
 
-        const CameraController = ({ view, progress, data, isPlaying, camAngle, camDistance }) => {
+        const CameraManager = ({ view, progress, data }) => {
           const { camera } = useThree();
-          const controlsRef = useRef();
-          const total = data.length;
+          const controls = useRef();
+          const currentIdx = Math.max(0, Math.min(data.length - 1, progress));
+          const xPos = (currentIdx - (data.length - 1) / 2) * 3.5;
 
           useFrame(() => {
-            if (!controlsRef.current) return;
-            const currentIdx = Math.max(0, Math.min(total - 1, progress));
-            const xPos = (currentIdx - (total - 1) / 2) * 3.5;
-            const height = data[Math.floor(currentIdx)].value * 0.1;
-
             if (view === CameraView.CINEMATIC) {
-              const rad = (camAngle * Math.PI) / 180;
-              controlsRef.current.target.lerp(new THREE.Vector3(xPos, height / 2 + 2, 0), 0.05);
-              camera.position.lerp(new THREE.Vector3(xPos + Math.sin(rad) * camDistance, height / 2 + 10, Math.cos(rad) * camDistance), 0.05);
-              controlsRef.current.update();
+              controls.current?.target.lerp(new THREE.Vector3(xPos, 5, 0), 0.05);
+              camera.position.lerp(new THREE.Vector3(xPos + 25, 15, 40), 0.05);
             } else if (view === CameraView.PANORAMA) {
+              controls.current?.target.lerp(new THREE.Vector3(0, 0, 0), 0.04);
               camera.position.lerp(new THREE.Vector3(0, 30, 80), 0.04);
-              controlsRef.current.target.lerp(new THREE.Vector3(0, 5, 0), 0.04);
-              controlsRef.current.update();
             }
+            controls.current?.update();
           });
-
-          return <OrbitControls ref={controlsRef} makeDefault enableDamping dampingFactor={0.05} enabled={view === CameraView.FREE || !isPlaying} />;
+          return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.05} enabled={view === CameraView.FREE} />;
         };
 
-        // --- 容器与 UI ---
+        // ==========================================
+        // 3. 主页面
+        // ==========================================
         const App = () => {
           const [progress, setProgress] = useState(0);
           const [isPlaying, setIsPlaying] = useState(true);
+          const [mode, setMode] = useState(CONFIG.ui.defaultMode);
           const [view, setView] = useState(CameraView.CINEMATIC);
-          const [visMode, setVisMode] = useState(CONFIG.ui.defaultMode);
-          const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
 
           useEffect(() => {
             if (!isPlaying) return;
-            const animate = () => {
+            const step = () => {
               setProgress(p => {
                 if (p >= CONFIG.data.length) { setIsPlaying(false); setView(CameraView.PANORAMA); return CONFIG.data.length; }
-                return p + (0.004 * playbackSpeed);
+                return p + 0.005;
               });
-              requestAnimationFrame(animate);
+              requestAnimationFrame(step);
             };
-            const id = requestAnimationFrame(animate);
+            const id = requestAnimationFrame(step);
             return () => cancelAnimationFrame(id);
-          }, [isPlaying, playbackSpeed]);
+          }, [isPlaying]);
 
           return (
-            <div className="flex flex-col w-full h-[100dvh] bg-black text-white select-none">
-              <div className="relative flex-grow">
-                <div className="absolute top-0 left-0 p-8 z-10 pointer-events-none">
-                  <h1 className="text-xl md:text-3xl font-black italic uppercase">
-                    {CONFIG.ui.title} <span className="text-blue-500">{CONFIG.ui.highlightTitle}</span>
-                  </h1>
-                  <p className="text-blue-400 text-[9px] font-bold tracking-[0.4em] opacity-50">{CONFIG.ui.subTitle}</p>
+            <div className="w-full h-full flex flex-col bg-black overflow-hidden">
+              <div className="flex-grow relative">
+                <div className="absolute top-8 left-8 z-20 pointer-events-none">
+                  <h1 className="text-3xl font-black italic">{CONFIG.ui.title} <span className="text-blue-500">{CONFIG.ui.highlightTitle}</span></h1>
+                  <p className="text-blue-400 text-[10px] tracking-[0.4em] font-bold opacity-60 uppercase">{CONFIG.ui.subTitle}</p>
                 </div>
-                <Canvas dpr={[1, 2]}>
-                  <Environment preset="night" /><fog attach="fog" args={['#000', 30, 400]} />
-                  <CameraController view={view} progress={progress} data={CONFIG.data} isPlaying={isPlaying} camAngle={30} camDistance={45} />
-                  <directionalLight position={[10, 20, 10]} intensity={1.5} />
-                  <group>
-                    <Grid infiniteGrid sectionColor="#111" cellColor="#050505" />
-                    {visMode === 'BAR' ? 
-                      CONFIG.data.map((item, idx) => <Bar key={item.id} item={item} index={idx} total={CONFIG.data.length} progress={progress} active={Math.floor(progress) === idx} />) :
-                      CONFIG.data.map((item, idx) => <LineNode key={item.id} item={item} prevItem={idx > 0 ? CONFIG.data[idx-1] : null} index={idx} total={CONFIG.data.length} progress={progress} active={Math.floor(progress) === idx} />)
-                    }
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+
+                <Canvas dpr={[1, 2]} shadows>
+                  <Suspense fallback={null}>
+                    <Environment preset="night" />
+                    <CameraManager view={view} progress={progress} data={CONFIG.data} />
+                    <Grid infiniteGrid fadeDistance={150} sectionColor="#111" cellColor="#050505" />
+                    <group key={mode}>
+                      {CONFIG.data.map((item, i) => (
+                        mode === 'BAR' ? 
+                        <Bar key={item.id} item={item} index={i} total={CONFIG.data.length} progress={progress} active={Math.floor(progress) === i} /> :
+                        <LineNode key={item.id} item={item} prevItem={i>0?CONFIG.data[i-1]:null} index={i} total={CONFIG.data.length} progress={progress} active={Math.floor(progress) === i} />
+                      ))}
+                    </group>
+                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, -0.05, 0]}>
                       <planeGeometry args={[1000, 1000]} />
-                      <MeshReflectorMaterial color="#080808" metalness={0.5} mirror={0.8} />
+                      <MeshReflectorMaterial mirror={0.8} color="#050505" metalness={0.5} />
                     </mesh>
-                  </group>
+                  </Suspense>
                 </Canvas>
               </div>
-              <div className="bg-[#050505] border-t border-white/5 p-4 flex flex-col items-center">
-                <div className="w-full h-1 bg-white/10 mb-4 relative">
-                    <div className="absolute h-full bg-blue-500 transition-all" style={{ width: `${(progress / CONFIG.data.length) * 100}%` }} />
+
+              <div className="bg-[#080808] border-t border-white/5 p-6 flex flex-col items-center gap-4 z-30">
+                <div className="w-full max-w-4xl h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${(progress / CONFIG.data.length) * 100}%` }} />
                 </div>
-                <div className="flex gap-4">
-                  <button onClick={() => setIsPlaying(!isPlaying)} className="p-4 bg-blue-600 rounded-full">{isPlaying ? <Pause /> : <Play />}</button>
-                  <button onClick={() => { setProgress(0); setIsPlaying(true); setView(CameraView.CINEMATIC); }} className="p-4 bg-white/10 rounded-full"><RotateCcw /></button>
-                  <button onClick={() => setVisMode(v => v === 'BAR' ? 'LINE' : 'BAR')} className="p-4 bg-white/10 rounded-full">模式切换</button>
+                <div className="flex items-center gap-6">
+                  <button onClick={() => setIsPlaying(!isPlaying)} className="p-4 bg-blue-600 rounded-full hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/20">{isPlaying ? <Pause size={24} /> : <Play size={24} />}</button>
+                  <button onClick={() => { setProgress(0); setIsPlaying(true); setView(CameraView.CINEMATIC); }} className="p-4 bg-white/5 rounded-full hover:bg-white/10"><RotateCcw size={20} /></button>
+                  <div className="h-8 w-[1px] bg-white/10 mx-2" />
+                  <button onClick={() => setMode(m => m === 'BAR' ? 'LINE' : 'BAR')} className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-black tracking-widest uppercase hover:bg-white/10 transition-all">
+                    当前模式: {mode === 'BAR' ? '柱状图' : '折线图'}
+                  </button>
                 </div>
               </div>
             </div>
