@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 动态数据对比工具 - 最终完整复原版</title>
+    <title>2327 3D 动态数据对比工具 - 最终完整复原版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -48,26 +48,96 @@
         // ==========================================
         // 全局配置区
         // ==========================================
-        const CONFIG = {
-          ui: {
-            title: "2024年",
-            highlightTitle: "中国省份 GDP TOP 10",
-            subTitle: "数据来源：各省统计局初步核算数 (单位：万亿元)",
-            defaultMode: 'BAR' 
-          },
-          data: [
-            { id: '10', name: '上海', value: 4.90, unit: '万亿', color: '#9c27b0', flag: '🏙️' },
-            { id: '9',  name: '安徽', value: 4.95, unit: '万亿', color: '#795548', flag: '🌄' },
-            { id: '8',  name: '福建', value: 5.56, unit: '万亿', color: '#00bcd4', flag: '🌊' },
-            { id: '7',  name: '湖北', value: 5.75, unit: '万亿', color: '#4caf50', flag: '🦢' },
-            { id: '6',  name: '河南', value: 6.05, unit: '万亿', color: '#ffeb3b', flag: '🌾' },
-            { id: '5',  name: '四川', value: 6.30, unit: '万亿', color: '#ff9800', flag: '🐼' },
-            { id: '4',  name: '浙江', value: 8.70, unit: '万亿', color: '#2196f3', flag: '🍵' },
-            { id: '3',  name: '山东', value: 9.60, unit: '万亿', color: '#3f51b5', flag: '⛰️' },
-            { id: '2',  name: '江苏', value: 13.28, unit: '万亿', color: '#f44336', flag: '🏮' },
-            { id: '1',  name: '广东', value: 13.92, unit: '万亿', color: '#d32f2f', flag: '🦁' },
-          ].sort((a, b) => a.value - b.value)
-        };
+        const const CONFIG = {
+  "ui": {
+    "title": "2024年",
+    "highlightTitle": "世界GDP排名TOP10",
+    "subTitle": "数据来源：IMF & 世界银行 (单位：万亿美元)",
+    "defaultMode": "BAR"
+  },
+  "data": [
+    {
+      "id": "1",
+      "name": "美国",
+      "value": 29.2,
+      "unit": "万亿",
+      "color": "#d32f2f",
+      "flag": "🇺🇸"
+    },
+    {
+      "id": "2",
+      "name": "中国",
+      "value": 18.94,
+      "unit": "万亿",
+      "color": "#f44336",
+      "flag": "🇨🇳"
+    },
+    {
+      "id": "3",
+      "name": "德国",
+      "value": 4.66,
+      "unit": "万亿",
+      "color": "#ff5722",
+      "flag": "🇩🇪"
+    },
+    {
+      "id": "4",
+      "name": "日本",
+      "value": 4.04,
+      "unit": "万亿",
+      "color": "#ff9800",
+      "flag": "🇯🇵"
+    },
+    {
+      "id": "5",
+      "name": "印度",
+      "value": 3.98,
+      "unit": "万亿",
+      "color": "#ffc107",
+      "flag": "🇮🇳"
+    },
+    {
+      "id": "6",
+      "name": "英国",
+      "value": 3.64,
+      "unit": "万亿",
+      "color": "#cddc39",
+      "flag": "🇬🇧"
+    },
+    {
+      "id": "7",
+      "name": "法国",
+      "value": 3.16,
+      "unit": "万亿",
+      "color": "#8bc34a",
+      "flag": "🇫🇷"
+    },
+    {
+      "id": "8",
+      "name": "意大利",
+      "value": 2.37,
+      "unit": "万亿",
+      "color": "#4caf50",
+      "flag": "🇮🇹"
+    },
+    {
+      "id": "9",
+      "name": "加拿大",
+      "value": 2.24,
+      "unit": "万亿",
+      "color": "#009688",
+      "flag": "🇨🇦"
+    },
+    {
+      "id": "10",
+      "name": "巴西",
+      "value": 2.18,
+      "unit": "万亿",
+      "color": "#00bcd4",
+      "flag": "🇧🇷"
+    }
+  ]
+};
 
         const CameraView = { FREE: 'FREE', FRONT: 'FRONT', TOP: 'TOP', SIDE: 'SIDE', CINEMATIC: 'CINEMATIC', PANORAMA: 'PANORAMA' };
 
