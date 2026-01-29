@@ -95,11 +95,17 @@
         // ==========================================
         // 全局配置与数据
         // ==========================================
+        // ==========================================
+        // 全局配置与数据
+        // ==========================================
         const CONFIG = {
           "ui": {
             "title": "2024 亚洲 GDP 排名预测",
             "subTitle": "数据来源：国际货币政府组织 (IMF) 统计报告",
-            "meta": "电影级星系可视化系统"
+            "meta": "电影级星系可视化系统",
+            // --- 新增：坐标轴说明配置 ---
+            "axisX": "国家 / 地区",      // 原 Asia Nations
+            "axisY": "GDP 总值 (亿美元)" // 原 GDP Value ($B)
           },
           "data": [
             { "id": "1", "name": "中国", "value": 18744, "color": "#ff3e3e", "flag": "🇨🇳" },
@@ -653,14 +659,15 @@
                 />
               </div>
 
+              {/* 这里的文字现在从 CONFIG 读取 */}
               <div className="absolute top-1/2 left-10 -translate-y-1/2 flex flex-col gap-10 opacity-10 pointer-events-none hidden lg:flex">
                 <div className="flex flex-col gap-2">
                   <div className="w-16 h-0.5 bg-indigo-500" />
-                  <span className="text-[9px] font-bold tracking-widest uppercase">Asia Nations</span>
+                  <span className="text-[9px] font-bold tracking-widest uppercase">{CONFIG.ui.axisX}</span>
                 </div>
                 <div className="flex flex-col gap-2">
                   <div className="w-16 h-0.5 bg-zinc-100" />
-                  <span className="text-[9px] font-bold tracking-widest uppercase">GDP Value ($B)</span>
+                  <span className="text-[9px] font-bold tracking-widest uppercase">{CONFIG.ui.axisY}</span>
                 </div>
               </div>
             </div>
