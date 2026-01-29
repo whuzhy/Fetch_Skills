@@ -104,6 +104,7 @@
             "subTitle": "数据来源：国际货币政府组织 (IMF) 统计报告",
             "meta": "电影级星系可视化系统",
             // --- 新增：坐标轴说明配置 ---
+            "unit": "亿美元",              // <-- 新增：在这里定义单位
             "axisX": "国家 / 地区",      // 原 Asia Nations
             "axisY": "GDP 总值 (亿美元)" // 原 GDP Value ($B)
           },
@@ -632,8 +633,10 @@
                   <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,1)] animate-pulse" />
                   <span className="text-[11px] font-black tracking-[0.8em] uppercase text-indigo-400/80">{CONFIG.ui.meta}</span>
                 </div>
+                {/* 这里的标题现在会自动拼接单位 */}
                 <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none text-white drop-shadow-[0_15px_15px_rgba(0,0,0,0.9)]">
                   {CONFIG.ui.title}
+                  {CONFIG.ui.unit && <span className="text-2xl md:text-3xl ml-4 opacity-70">({CONFIG.ui.unit})</span>}
                 </h1>
                 <p className="text-zinc-500 text-xs md:text-sm font-bold tracking-[0.3em] opacity-60 uppercase">
                   {CONFIG.ui.subTitle}
