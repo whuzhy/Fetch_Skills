@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 动态数据可视化系统 - 单文件版</title>
+    <title>3D 动态柱状图 - 终极星系版 (完全展开无删减)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -18,40 +18,42 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #000000;
         }
-        /* 隐藏滚动条 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
-        ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 10px; }
         
-        /* Loading 遮罩动画 */
+        /* 初始加载层样式 */
         #loading-screen {
             position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #6366f1; font-weight: bold; letter-spacing: 0.2em;
             transition: opacity 0.5s ease;
+            pointer-events: none; /* 关键：防止遮挡交互 */
         }
+        
         input[type="range"] { accent-color: #6366f1; }
     </style>
 
     <script type="importmap">
     {
       "imports": {
-        "react": "https://esm.sh/react@19.0.0",
-        "react-dom": "https://esm.sh/react-dom@19.0.0",
-        "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-        "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
-        "three": "https://esm.sh/three@0.182.0",
-        "three/examples/jsm/loaders/EXRLoader": "https://esm.sh/three@0.182.0/examples/jsm/loaders/EXRLoader",
-        "@react-three/fiber": "https://esm.sh/@react-three/fiber@9.0.0?external=react,react-dom,three",
-        "@react-three/drei": "https://esm.sh/@react-three/drei@10.0.0?external=react,react-dom,three,@react-three/fiber",
-        "lucide-react": "https://esm.sh/lucide-react@0.475.0?external=react"
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+        "three": "https://esm.sh/three@0.160.0",
+        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.16?external=react,react-dom,three",
+        "@react-three/drei": "https://esm.sh/@react-three/drei@9.99.0?external=react,react-dom,three,@react-three/fiber",
+        "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react",
+        "uuid": "https://esm.sh/uuid@9.0.1"
       }
     }
     </script>
 </head>
 <body>
-    <div id="loading-screen">INITIALIZING SYSTEM...</div>
+    <div id="loading-screen">
+        <div>SYSTEM INITIALIZING...</div>
+    </div>
     
     <div id="root"></div>
 
@@ -75,38 +77,34 @@
           Float,
           BakeShadows,
           Stars,
-          Grid,
-          Sparkles
+          Sparkles,
+          Line
         } from '@react-three/drei';
         import * as THREE from 'three';
         import { 
-          Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, BarChart3, MoveUp
+          Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, Activity, MoveUp, TrendingUp, BarChart3
         } from 'lucide-react';
 
-        // 移除 Loading 遮罩
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) {
-            setTimeout(() => {
-                loadingScreen.style.opacity = '0';
-                setTimeout(() => loadingScreen.remove(), 500);
-            }, 1000); // 稍微延迟以保证渲染准备就绪
-        }
+        // --- 安全措施：强制移除 Loading 动画 ---
+        setTimeout(() => {
+            const ls = document.getElementById('loading-screen');
+            if (ls) {
+                ls.style.opacity = '0';
+                setTimeout(() => ls.remove(), 500);
+            }
+        }, 1500);
 
         // ==========================================
-        // 全局配置与数据
-        // ==========================================
-        // ==========================================
-        // 全局配置与数据
+        // 1. 全局配置 (Global Configuration)
         // ==========================================
         const CONFIG = {
           "ui": {
             "title": "2024 亚洲 GDP 排名预测",
+            "unit": "亿美元",
             "subTitle": "数据来源：国际货币政府组织 (IMF) 统计报告",
-            "meta": "电影级星系可视化系统",
-            // --- 新增：坐标轴说明配置 ---
-            "unit": "亿美元",              // <-- 新增：在这里定义单位
-            "axisX": "国家 / 地区",      // 原 Asia Nations
-            "axisY": "GDP 总值 (亿美元)" // 原 GDP Value ($B)
+            "meta": "星系柱状趋势系统 // PRO", 
+            "axisX": "国家 / 地区",
+            "axisY": "GDP 总值"
           },
           "data": [
             { "id": "1", "name": "中国", "value": 18744, "color": "#ff3e3e", "flag": "🇨🇳" },
@@ -123,110 +121,137 @@
         };
 
         const SCALE_FACTOR = 0.0006;
-        const BAR_SPACING = 7.5;
+        const BAR_SPACING = 8.0;
         const SCENE_FLOOR_Y = 18; 
+        const TARGET_VISUAL_HEIGHT = 60; // 黄金视觉高度
 
-        // 替换 Enum 为普通对象
         const CameraView = {
           FREE: 'FREE',
           CINEMATIC: 'CINEMATIC',
           FRONT: 'FRONT'
         };
 
-        // --- 增强版：超感星系背景 ---
-        const DeepSpaceGalaxy = () => {
-          const groupRef = useRef(null);
+        // ==========================================
+        // 2. 3D 场景组件 (3D Components)
+        // ==========================================
 
-          // 极缓慢的背景旋转
-          useFrame((state) => {
-            if (groupRef.current) {
-              groupRef.current.rotation.y = state.clock.elapsedTime * 0.01;
-              groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.05) * 0.1;
-            }
-          });
-
-          return (
-            <group ref={groupRef}>
-              {/* 1. 基础静态星场 */}
-              <Stars radius={400} depth={50} count={6000} factor={1.5} saturation={0} fade speed={0.05} />
-              
-              {/* 2. 星系星云云雾 (Nebula) */}
-              <Sparkles count={35} scale={600} size={45} speed={0.1} opacity={0.3} color="#1e3a8a" />
-              <Sparkles count={25} scale={450} size={35} speed={0.15} opacity={0.2} color="#7e22ce" />
-              <Sparkles count={20} scale={350} size={25} speed={0.2} opacity={0.25} color="#0ea5e9" />
-              
-              {/* 3. 星系核心 (Galaxy Core) */}
-              <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
-                <group position={[150, 80, -500]}>
-                   <mesh scale={[180, 180, 180]}>
-                     <sphereGeometry args={[1, 32, 32]} />
-                     <meshBasicMaterial color="#4338ca" transparent opacity={0.15} blending={THREE.AdditiveBlending} />
-                   </mesh>
-                   <mesh scale={[40, 40, 40]}>
-                     <sphereGeometry args={[1, 16, 16]} />
-                     <meshBasicMaterial color="#e0e7ff" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
-                   </mesh>
-                   <pointLight intensity={80} distance={2000} color="#818cf8" />
-                </group>
-              </Float>
-
-              {/* 4. 微弱的星系尘埃带 */}
-              <Sparkles count={50} scale={[800, 50, 800]} size={3} speed={0.3} opacity={0.4} color="#ffffff" />
-
-              {/* 5. 远古星座连线 */}
-              <Constellations />
-            </group>
-          );
-        };
-
-        // --- 幽灵星座连线 ---
+        // --- 星座连线特效 (保留自原 Bars 版本) ---
         const Constellations = () => {
           const lineGeom = useMemo(() => {
             const points = [];
             const radius = 650;
             const count = 15; 
-            
             for (let i = 0; i < count; i++) {
               const phi = Math.random() * Math.PI;
               const theta = Math.random() * Math.PI * 2;
               const center = new THREE.Vector3().setFromSphericalCoords(radius, phi, theta);
-              
               let prev = center.clone();
               const segments = 2 + Math.floor(Math.random() * 3);
-              
               for (let j = 0; j < segments; j++) {
-                const next = prev.clone().add(new THREE.Vector3(
-                  (Math.random() - 0.5) * 150,
-                  (Math.random() - 0.5) * 150,
-                  (Math.random() - 0.5) * 150
-                )).normalize().multiplyScalar(radius);
-                
+                const next = prev.clone().add(new THREE.Vector3((Math.random()-0.5)*150, (Math.random()-0.5)*150, (Math.random()-0.5)*150)).normalize().multiplyScalar(radius);
                 points.push(prev.clone(), next.clone());
                 prev = next;
               }
             }
             return new THREE.BufferGeometry().setFromPoints(points);
           }, []);
+          return <lineSegments geometry={lineGeom}><lineBasicMaterial color="#6366f1" transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false} /></lineSegments>;
+        };
 
+        // --- 背景组件 ---
+        const DeepSpaceGalaxy = () => {
+          const groupRef = useRef(null);
+          useFrame((state) => {
+            if (groupRef.current) {
+              groupRef.current.rotation.y = state.clock.elapsedTime * 0.01;
+            }
+          });
           return (
-            <lineSegments geometry={lineGeom}>
-              <lineBasicMaterial color="#6366f1" transparent opacity={0.03} blending={THREE.AdditiveBlending} depthWrite={false} />
-            </lineSegments>
+            <group ref={groupRef}>
+              <Stars radius={400} depth={50} count={6000} factor={1.5} saturation={0} fade speed={0.05} />
+              <Sparkles count={35} scale={600} size={45} speed={0.1} opacity={0.3} color="#1e3a8a" />
+              <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
+                <group position={[150, 80, -500]}>
+                   <mesh scale={[180, 180, 180]}>
+                     <sphereGeometry args={[1, 32, 32]} />
+                     <meshBasicMaterial color="#4338ca" transparent opacity={0.15} blending={THREE.AdditiveBlending} />
+                   </mesh>
+                   <pointLight intensity={80} distance={2000} color="#818cf8" />
+                </group>
+              </Float>
+              <Sparkles count={50} scale={[800, 50, 800]} size={3} speed={0.3} opacity={0.4} color="#ffffff" />
+              <Constellations /> {/* 柱状图专属背景 */}
+            </group>
           );
         };
 
-        // --- 单个柱状图组件 ---
-        const Bar = ({ item, index, total, progress, active, thickness, labelOffset }) => {
+        // --- 智能参考线网格 ---
+        const AxisGrid = ({ data, steepness, show }) => {
+          if (!show) return null;
+
+          const maxValue = data[data.length - 1].value;
+          
+          // 智能步长逻辑
+          let step = 1000;
+          if (maxValue > 50000) step = 10000;
+          else if (maxValue > 10000) step = 5000;
+          else if (maxValue > 5000) step = 1000;
+          else step = 500;
+
+          const count = Math.ceil(maxValue / step);
+          const totalWidth = (data.length - 1) * BAR_SPACING;
+          
+          const lines = [];
+          for (let i = 1; i <= count; i++) {
+             lines.push(i * step);
+          }
+
+          return (
+            <group position={[0, 0, 0]}>
+              {lines.map((val) => {
+                const yPos = val * SCALE_FACTOR * steepness;
+                return (
+                  <group key={val} position={[0, yPos, 0]}>
+                    <Line 
+                      points={[[-totalWidth/2 - 5, 0, 0], [totalWidth/2 + 5, 0, 0]]} 
+                      color="#6366f1" 
+                      opacity={0.15} 
+                      transparent 
+                      dashed 
+                      dashScale={2}
+                      dashSize={1}
+                      gapSize={1}
+                      lineWidth={1} 
+                    />
+                    <Billboard position={[-totalWidth/2 - 8, 0, 0]}>
+                      <Text 
+                        fontSize={1.2} 
+                        color="#818cf8" 
+                        fillOpacity={0.5} 
+                        anchorX="right" 
+                        anchorY="middle"
+                      >
+                        {val.toLocaleString()}
+                      </Text>
+                    </Billboard>
+                  </group>
+                )
+              })}
+            </group>
+          )
+        };
+
+        // --- 核心柱状节点组件 (BarNode) ---
+        const BarNode = ({ item, index, total, progress, active, thickness, labelOffset, steepness }) => {
           const meshRef = useRef(null);
           const growth = Math.max(0, Math.min(1, progress - index));
           
           const labelOpacity = THREE.MathUtils.smoothstep(growth, 0, 0.2);
           const labelScale = THREE.MathUtils.lerp(0.6, 1, THREE.MathUtils.smoothstep(growth, 0, 0.3));
           
-          const targetHeight = item.value * SCALE_FACTOR;
+          // 【核心逻辑】应用垂直拉伸 steepness
+          const targetHeight = item.value * SCALE_FACTOR * steepness;
           const currentHeight = Math.max(0.1, targetHeight * growth);
-          
-          const labelBaseY = Math.max(labelOffset, currentHeight + labelOffset);
           
           const totalWidth = (total - 1) * BAR_SPACING;
           const xPos = (index * BAR_SPACING) - (totalWidth / 2);
@@ -234,32 +259,34 @@
           useFrame((state) => {
             if (meshRef.current) {
               const material = meshRef.current.material;
-              const pulse = active ? Math.sin(state.clock.elapsedTime * 6) * 0.15 + 0.25 : 0.05;
+              // 激活时的呼吸发光
+              const pulse = active ? Math.sin(state.clock.elapsedTime * 6) * 0.2 + 0.3 : 0.05;
               material.emissiveIntensity = THREE.MathUtils.lerp(material.emissiveIntensity, pulse, 0.1);
             }
           });
 
           return (
             <group position={[xPos, 0, 0]}>
+              {/* 柱体 */}
               <mesh 
                 ref={meshRef}
                 scale={[thickness, currentHeight, thickness]} 
                 position={[0, currentHeight / 2, 0]}
-                castShadow
-                receiveShadow
+                castShadow receiveShadow
               >
                 <boxGeometry args={[3.5, 1, 3.5]} />
                 <meshStandardMaterial 
-                  color={item.color} 
-                  emissive={item.color}
-                  emissiveIntensity={0.05}
-                  roughness={0.1}
-                  metalness={0.8}
+                    color={item.color} 
+                    emissive={item.color} 
+                    emissiveIntensity={0.05} 
+                    roughness={0.1} 
+                    metalness={0.8} 
                 />
               </mesh>
 
-              {progress > index && (
-                <Billboard position={[0, labelBaseY, 0]}>
+              {/* 标签 */}
+              {growth > 0.01 && (
+                <Billboard position={[0, currentHeight + labelOffset, 0]}>
                   <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
                     <group scale={labelScale}>
                       <Text position={[0, 2.5, 0]} fontSize={1.6} fillOpacity={labelOpacity} anchorX="center">{item.flag}</Text>
@@ -267,8 +294,7 @@
                       <Text position={[0, 0, 0]} fontSize={1.4} fontWeight="black" color={active ? "#ffffff" : item.color} fillOpacity={labelOpacity} anchorX="center">
                         {(() => {
                           const val = item.value * (growth > 0.9 ? 1 : growth);
-                          // 判断是否为整数，若是则直接取整显示，否则保留2位小数
-                          return Number.isInteger(val) ? Math.round(val).toLocaleString() : val.toFixed(2);
+                          return Number.isInteger(val) ? Math.round(val).toLocaleString() : val.toFixed(0);
                         })()}
                       </Text>
                     </group>
@@ -279,8 +305,8 @@
           );
         };
 
-        // --- 摄像机控制器 ---
-        const CameraController = ({ view, progress, data, isPlaying, camAngle, camDistance, autoRotate }) => {
+        // --- 智能摄像机控制器 (包含防溢出算法) ---
+        const CameraController = ({ view, progress, data, isPlaying, camAngle, camDistance, autoRotate, steepness }) => {
           const { camera, size } = useThree();
           const controlsRef = useRef(null);
           const targetPos = useMemo(() => new THREE.Vector3(), []);
@@ -288,7 +314,7 @@
           
           const total = data.length;
           const totalWidth = (total - 1) * BAR_SPACING;
-          const maxHeight = data[total - 1].value * SCALE_FACTOR;
+          const maxHeight = data[total - 1].value * SCALE_FACTOR * steepness;
 
           useFrame((state) => {
             if (!controlsRef.current) return;
@@ -299,23 +325,32 @@
             const ceilIdx = Math.min(total - 1, floorIdx + 1);
             const alpha = currentActiveIdx - floorIdx;
             
-            const heightAtFocus = (data[floorIdx].value + (data[ceilIdx].value - data[floorIdx].value) * alpha) * SCALE_FACTOR;
+            // 计算当前焦点高度
+            const currentVal = data[floorIdx].value + (data[ceilIdx].value - data[floorIdx].value) * alpha;
+            const heightAtFocus = currentVal * SCALE_FACTOR * steepness;
             const xPosAtFocus = (currentActiveIdx * BAR_SPACING) - (totalWidth / 2);
 
             if (view === CameraView.CINEMATIC) {
-              const heightRatio = Math.min(1.0, heightAtFocus / 10);
-              const focusCenterY = SCENE_FLOOR_Y + (heightAtFocus * (0.35 - heightRatio * 0.1)) + 3;
+              // 1. 动态焦点高度：看柱子的中上部
+              const focusCenterY = SCENE_FLOOR_Y + (heightAtFocus * 0.5) + 3;
               const rad = ((camAngle + 30) * Math.PI) / 180;
               
               lookAtTarget.set(xPosAtFocus, focusCenterY, 0);
               controls.target.lerp(lookAtTarget, 0.08);
 
               if (isPlaying || progress < total) {
+                // *** 核心算法：智能防溢出 ***
+                // 柱子太高时，自动后退 (Zoom Out) + 升空 (Lift)
+                const dynamicZoomOut = Math.max(0, (heightAtFocus - 20) * 0.9); 
+                const activeDistance = camDistance + dynamicZoomOut;
+                const dynamicHeightLift = Math.max(0, (heightAtFocus - 15) * 0.3);
+
                 targetPos.set(
-                  xPosAtFocus + Math.sin(rad) * camDistance, 
-                  focusCenterY + 4, 
-                  Math.cos(rad) * camDistance
+                  xPosAtFocus + Math.sin(rad) * activeDistance, 
+                  focusCenterY + 4 + dynamicHeightLift,
+                  Math.cos(rad) * activeDistance
                 );
+                
                 camera.position.lerp(targetPos, 0.04);
               }
               controls.update();
@@ -323,25 +358,24 @@
             else if (view === CameraView.FRONT) {
               const fovRad = camera.fov * (Math.PI / 180);
               const aspect = size.width / size.height;
-              const contentHeight = maxHeight + 10;
-              const contentWidth = totalWidth + 10;
               
-              const availableHeightRatio = 0.5;
+              // 自动适应屏幕的算法
+              const contentHeight = maxHeight * 1.1 + 10; 
+              const contentWidth = totalWidth * 1.1 + 15;
+              
               const distByWidth = (contentWidth / 2) / Math.tan(fovRad / 2) / aspect;
-              const distByHeight = (contentHeight / 2) / Math.tan(fovRad / 2) / availableHeightRatio;
+              const distByHeight = (contentHeight / 2) / Math.tan(fovRad / 2);
               
-              const finalDist = Math.max(distByWidth, distByHeight, camDistance * 1.5);
-              const targetY = SCENE_FLOOR_Y + (maxHeight / 2) - 1;
+              const finalDist = Math.max(distByWidth, distByHeight, camDistance * 1.2);
+              const targetY = SCENE_FLOOR_Y + (maxHeight * 0.45);
 
               const rotationSpeed = autoRotate ? state.clock.elapsedTime * 0.1 : 0;
               const rotAngle = (camAngle * Math.PI / 180) + rotationSpeed;
 
               lookAtTarget.set(0, targetY, 0);
-              targetPos.set(
-                Math.sin(rotAngle) * finalDist,
-                targetY + (finalDist * 0.2),
-                Math.cos(rotAngle) * finalDist
-              );
+              const camHeight = targetY + (maxHeight * 0.15) + 5;
+
+              targetPos.set(Math.sin(rotAngle) * finalDist, camHeight, Math.cos(rotAngle) * finalDist);
               
               controls.target.lerp(lookAtTarget, 0.06);
               camera.position.lerp(targetPos, 0.06);
@@ -349,17 +383,7 @@
             }
           });
 
-          return (
-            <OrbitControls 
-              ref={controlsRef} 
-              makeDefault 
-              enableDamping 
-              dampingFactor={0.05} 
-              minDistance={5} 
-              maxDistance={2500} 
-              maxPolarAngle={Math.PI / 2.02} 
-            />
-          );
+          return <OrbitControls ref={controlsRef} makeDefault enableDamping dampingFactor={0.05} minDistance={5} maxDistance={2500} maxPolarAngle={Math.PI / 2.02} />;
         };
 
         const SceneContent = (props) => {
@@ -367,31 +391,15 @@
 
           return (
             <React.Fragment>
-              {/* 纯净的宇宙黑背景 */}
               <color attach="background" args={['#000000']} />
-              <Suspense fallback={null}>
-                <Environment preset="night" />
-              </Suspense>
-
-              {/* 超感星系背景层 */}
+              <Suspense fallback={null}><Environment preset="night" /></Suspense>
               <DeepSpaceGalaxy />
-
-              <fog attach="fog" args={['#000000', 300, 1200]} />
+              <fog attach="fog" args={['#000000', 100, 2000]} />
               
-              {props.showGrid && (
-                <group position={[0, SCENE_FLOOR_Y, 0]}>
-                  <Grid 
-                    infiniteGrid 
-                    fadeDistance={200} 
-                    fadeStrength={4} 
-                    cellSize={5} 
-                    sectionSize={25} 
-                    sectionThickness={1.5} 
-                    sectionColor="#1e293b" 
-                    cellColor="#020617" 
-                  />
-                </group>
-              )}
+              {/* 参考线网格 */}
+              <group position={[0, SCENE_FLOOR_Y, 0]}>
+                <AxisGrid data={props.data} steepness={props.steepness} show={props.showAxisLines} />
+              </group>
 
               <PerspectiveCamera makeDefault position={[0, 60, 200]} fov={30} />
               <CameraController {...props} />
@@ -402,16 +410,18 @@
 
               <group position={[0, SCENE_FLOOR_Y, 0]}>
                 <ContactShadows opacity={0.7} scale={400} blur={2.5} far={40} resolution={1024} color="#000" position={[0, -0.01, 0]} />
+                
                 {props.data.map((item, idx) => (
-                  <Bar 
+                  <BarNode 
                     key={item.id} 
                     item={item} 
                     index={idx} 
                     total={props.data.length} 
                     progress={props.progress} 
                     active={activeIndex === idx} 
-                    thickness={props.thickness} 
+                    thickness={props.thickness}
                     labelOffset={props.labelOffset}
+                    steepness={props.steepness} 
                   />
                 ))}
               </group>
@@ -420,7 +430,9 @@
           );
         };
 
-        // --- 悬浮控制界面 ---
+        // ==========================================
+        // 3. UI 控制面板 (完整豪华版)
+        // ==========================================
         const ControlsUI = (props) => {
           const [showSettings, setShowSettings] = useState(false);
           const progressPercent = Math.min(100, Math.round((props.progress / props.maxProgress) * 100));
@@ -428,6 +440,8 @@
 
           return (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl flex flex-col items-center bg-zinc-950/80 backdrop-blur-3xl border border-white/5 shadow-[0_35px_60px_-15px_rgba(0,0,0,1)] rounded-[2.5rem] overflow-visible transition-all">
+              
+              {/* 顶部进度条 */}
               <div className="w-[calc(100%-4rem)] h-1 bg-white/5 relative group cursor-pointer overflow-hidden mt-5 rounded-full">
                 <div 
                   className="absolute left-0 top-0 h-full bg-indigo-500 z-10 shadow-[0_0_15px_rgba(99,102,241,0.8)]" 
@@ -440,6 +454,7 @@
                 />
               </div>
 
+              {/* 主控制栏 */}
               <div className="w-full px-8 py-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <button 
@@ -457,6 +472,7 @@
                 </div>
 
                 <div className="flex items-center flex-grow justify-center gap-4">
+                  {/* 左侧：排名显示面板 */}
                   <div className="hidden sm:flex items-center px-4 border-r border-white/10 group min-w-[180px]">
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
@@ -471,6 +487,7 @@
                     </div>
                   </div>
 
+                  {/* 中间：视角切换 */}
                   <div className="flex bg-black/50 p-1.5 rounded-2xl border border-white/5">
                     {[ 
                       { id: CameraView.CINEMATIC, icon: <Camera size={13} />, label: '影院' }, 
@@ -488,6 +505,7 @@
                   </div>
                 </div>
 
+                {/* 右侧：设置按钮 */}
                 <div className="flex items-center gap-4 relative">
                   <div className="hidden md:flex flex-col items-end">
                     <span className="text-[11px] font-black text-indigo-500 tabular-nums tracking-widest">{progressPercent}%</span>
@@ -496,6 +514,7 @@
                     {showSettings ? <X size={18} /> : <Settings2 size={18} />}
                   </button>
 
+                  {/* 详细设置弹窗 */}
                   {showSettings && (
                     <div className="absolute bottom-[calc(100%+2rem)] right-0 w-80 bg-zinc-950/95 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_100px_rgba(0,0,0,1)] z-50 flex flex-col gap-5 animate-in fade-in zoom-in-95 slide-in-from-bottom-6 duration-300">
                       <div className="flex items-center gap-2 border-b border-white/5 pb-3">
@@ -503,6 +522,16 @@
                         <h3 className="text-[11px] font-black text-zinc-100 uppercase tracking-[0.2em]">系统调优</h3>
                       </div>
                       
+                      {/* 垂直拉伸控制 */}
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
+                          <span className="flex items-center gap-1"><TrendingUp size={11} /> 垂直拉伸 (Steepness)</span>
+                          <span className="text-indigo-400">{props.steepness.toFixed(1)}x</span>
+                        </div>
+                        <input type="range" min="1.0" max="10.0" step="0.5" value={props.steepness} onChange={(e) => props.setSteepness(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
+                      </div>
+
+                      {/* 播放速度 */}
                       <div className="space-y-3">
                         <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
                           <span>播放倍速</span>
@@ -511,6 +540,7 @@
                         <input type="range" min="0.1" max="4.0" step="0.1" value={props.speed} onChange={(e) => props.setSpeed(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
                       </div>
 
+                      {/* 标签高度 */}
                       <div className="space-y-3">
                         <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
                           <span className="flex items-center gap-1"><MoveUp size={11} /> 标签高度</span>
@@ -519,28 +549,13 @@
                         <input type="range" min="0.5" max="8.0" step="0.1" value={props.labelOffset} onChange={(e) => props.setLabelOffset(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
                       </div>
 
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
-                          <span>环绕角度</span>
-                          <span className="text-indigo-400">{props.angle}°</span>
-                        </div>
-                        <input type="range" min="0" max="360" step="1" value={props.angle} onChange={(e) => props.setAngle(parseInt(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
-                          <span>观察距离</span>
-                          <span className="text-indigo-400">{props.distance}m</span>
-                        </div>
-                        <input type="range" min="10" max="150" step="1" value={props.distance} onChange={(e) => props.setDistance(parseInt(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
-                      </div>
-
+                      {/* 底部开关 */}
                       <div className="grid grid-cols-2 gap-3 pt-3">
                         <button 
-                          onClick={() => props.setShowGrid(!props.showGrid)}
-                          className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all ${props.showGrid ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-inner' : 'bg-white/5 text-zinc-500'}`}
+                          onClick={() => props.setShowAxisLines(!props.showAxisLines)}
+                          className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all ${props.showAxisLines ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-inner' : 'bg-white/5 text-zinc-500'}`}
                         >
-                          宇宙网格
+                          参考标线
                         </button>
                         <button 
                           onClick={() => props.setAutoRotate(!props.autoRotate)}
@@ -557,28 +572,38 @@
           );
         };
 
+        // ==========================================
+        // 4. 主程序入口 (App)
+        // ==========================================
         const App = () => {
-          // 1. 【核心逻辑】：不管输入什么，强制从小到大排序
-          const sortedData = useMemo(() => {
-            return [...CONFIG.data].sort((a, b) => a.value - b.value);
-          }, []);
+          const sortedData = useMemo(() => [...CONFIG.data].sort((a, b) => a.value - b.value), []);
+
+          // --- 核心：初始化自适应计算 (Steepness Calculation) ---
+          const calculateAutoSteepness = () => {
+              if (sortedData.length === 0) return 3.0;
+              const maxVal = Math.max(...sortedData.map(d => d.value));
+              const autoVal = TARGET_VISUAL_HEIGHT / (maxVal * SCALE_FACTOR);
+              // 限制在 1x 到 10x 之间，避免过扁或过高
+              return Math.max(1.0, Math.min(10.0, autoVal));
+          };
 
           const [progress, setProgress] = useState(0);
           const [isPlaying, setIsPlaying] = useState(true);
           const [view, setView] = useState(CameraView.CINEMATIC);
           
-          // 状态初始化：读取 CONFIG 默认值或设定安全初始值
-          const [playbackSpeed, setPlaybackSpeed] = useState(CONFIG.ui.defaultSpeed || 1.2); 
-          const [camAngle, setCamAngle] = useState(CONFIG.ui.defaultCamAngle || 0); 
-          const [camDistance, setCamDistance] = useState(CONFIG.ui.defaultCamDist || 48); 
+          const [playbackSpeed, setPlaybackSpeed] = useState(1.0); 
+          const [camAngle, setCamAngle] = useState(0); 
+          const [camDistance, setCamDistance] = useState(48); 
           const [thickness, setThickness] = useState(1.0);
-          const [labelOffset, setLabelOffset] = useState(1.8); 
-          const [showGrid, setShowGrid] = useState(true);
+          const [labelOffset, setLabelOffset] = useState(2.2); 
           const [autoRotate, setAutoRotate] = useState(true); 
+          
+          // 使用自适应值初始化 steepness
+          const [steepness, setSteepness] = useState(calculateAutoSteepness());
+          const [showAxisLines, setShowAxisLines] = useState(true);
 
           const totalItems = sortedData.length;
           const maxProgress = totalItems;
-          
           const currentIndex = Math.floor(progress);
           const currentItem = sortedData[Math.min(totalItems - 1, currentIndex)];
 
@@ -587,6 +612,8 @@
             setIsPlaying(true); 
             setView(CameraView.CINEMATIC); 
             setAutoRotate(true);
+            // 重置时也恢复到最佳计算高度
+            setSteepness(calculateAutoSteepness());
           };
 
           useEffect(() => {
@@ -597,6 +624,7 @@
                 const next = prev + (0.005 * playbackSpeed);
                 if (next >= maxProgress) { 
                   setIsPlaying(false); 
+                  // 播放结束后自动切换到全景模式
                   setTimeout(() => {
                      setView(v => v === CameraView.CINEMATIC ? CameraView.FRONT : v);
                      setAutoRotate(true);
@@ -622,18 +650,19 @@
                   <PerformanceMonitor />
                   <AdaptiveDpr />
                   <AdaptiveEvents />
-                  {/* 使用 sortedData 渲染 3D 内容 */}
                   <SceneContent 
                     data={sortedData} 
                     progress={progress} 
                     view={view} 
                     isPlaying={isPlaying} 
+                    speed={playbackSpeed}
                     camAngle={camAngle} 
                     camDistance={camDistance}
                     thickness={thickness}
                     labelOffset={labelOffset}
-                    showGrid={showGrid}
                     autoRotate={autoRotate}
+                    steepness={steepness}
+                    showAxisLines={showAxisLines}
                   />
                 </Canvas>
               </div>
@@ -664,8 +693,9 @@
                   distance={camDistance} setDistance={setCamDistance} 
                   thickness={thickness} setThickness={setThickness}
                   labelOffset={labelOffset} setLabelOffset={setLabelOffset}
-                  showGrid={showGrid} setShowGrid={setShowGrid}
                   autoRotate={autoRotate} setAutoRotate={setAutoRotate}
+                  steepness={steepness} setSteepness={setSteepness}
+                  showAxisLines={showAxisLines} setShowAxisLines={setShowAxisLines}
                   onReset={handleReset}
                   currentItem={currentItem}
                   currentIndex={currentIndex}
@@ -673,7 +703,7 @@
                 />
               </div>
 
-              {/* 坐标轴标签 */}
+              {/* 左侧装饰性坐标轴 */}
               <div className="absolute top-1/2 left-10 -translate-y-1/2 flex flex-col gap-10 opacity-10 pointer-events-none hidden lg:flex">
                 <div className="flex flex-col gap-2">
                   <div className="w-16 h-0.5 bg-indigo-500" />
