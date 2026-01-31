@@ -62,29 +62,7 @@
         }, 1500);
 
         // --- 全局配置 ---
-        const CONFIG = {
-          "ui": {
-            "title": "2024 亚洲 GDP 排名预测",
-            "unit": "亿美元",
-            "subTitle": "IMF 国际货币基金组织数据",
-            "meta": "GALAXY VISUALIZATION // LINE PRO", 
-            "axisX": "国家 / 地区",
-            "axisY": "GDP 总值"
-          },
-          // 无论是黄金数据(2600-3000)还是GDP数据，都会自动归一化并居中
-          "data": [
-            { "id": "1", "name": "中国", "value": 18744, "color": "#ff3e3e", "flag": "🇨🇳" },
-            { "id": "2", "name": "日本", "value": 4026, "color": "#ff5e5e", "flag": "🇯🇵" },
-            { "id": "3", "name": "印度", "value": 3913, "color": "#ff9f43", "flag": "🇮🇳" },
-            { "id": "4", "name": "韩国", "value": 1713, "color": "#feca57", "flag": "🇰🇷" },
-            { "id": "5", "name": "印尼", "value": 1396, "color": "#ffdd59", "flag": "🇮🇩" },
-            { "id": "6", "name": "沙特", "value": 1238, "color": "#48c48f", "flag": "🇸🇦" },
-            { "id": "7", "name": "新加坡", "value": 547, "color": "#1dd1a1", "flag": "🇸🇬" },
-            { "id": "8", "name": "以色列", "value": 540, "color": "#00d2d3", "flag": "🇮🇱" },
-            { "id": "9", "name": "阿联酋", "value": 537, "color": "#54a0ff", "flag": "🇦🇪" },
-            { "id": "10", "name": "泰国", "value": 526, "color": "#5f27cd", "flag": "🇹🇭" }
-          ].sort((a, b) => a.value - b.value) 
-        };
+        const CONFIG = {"ui":{"highlightTitle":"3D 星系图表","title":"2005-2024年中国GDP走势图","subTitle":"数据来源：国家统计局","unit":"亿元","axisX":"年份","axisY":"GDP（亿元）"},"data":[{"id":"2005","name":"2005","value":184937,"color":"#4dabf7","icon":"📊"},{"id":"2006","name":"2006","value":216314,"color":"#4dabf7","icon":"📊"},{"id":"2007","name":"2007","value":265810,"color":"#4dabf7","icon":"📊"},{"id":"2008","name":"2008","value":314045,"color":"#4dabf7","icon":"📊"},{"id":"2009","name":"2009","value":340902,"color":"#4dabf7","icon":"📊"},{"id":"2010","name":"2010","value":397983,"color":"#4dabf7","icon":"📊"},{"id":"2011","name":"2011","value":473104,"color":"#4dabf7","icon":"📊"},{"id":"2012","name":"2012","value":519322,"color":"#4dabf7","icon":"📊"},{"id":"2013","name":"2013","value":568845,"color":"#4dabf7","icon":"📊"},{"id":"2014","name":"2014","value":636463,"color":"#4dabf7","icon":"📊"},{"id":"2015","name":"2015","value":689052,"color":"#4dabf7","icon":"📊"},{"id":"2016","name":"2016","value":744127,"color":"#4dabf7","icon":"📊"},{"id":"2017","name":"2017","value":827122,"color":"#4dabf7","icon":"📊"},{"id":"2018","name":"2018","value":900309,"color":"#4dabf7","icon":"📊"},{"id":"2019","name":"2019","value":990865,"color":"#4dabf7","icon":"📊"},{"id":"2020","name":"2020","value":1015986,"color":"#4dabf7","icon":"📊"},{"id":"2021","name":"2021","value":1143670,"color":"#4dabf7","icon":"📊"},{"id":"2022","name":"2022","value":1210207,"color":"#4dabf7","icon":"📊"},{"id":"2023","name":"2023","value":1260582,"color":"#4dabf7","icon":"📊"},{"id":"2024","name":"2024","value":1349084,"color":"#4dabf7","icon":"📊"}]};
 
         const BAR_SPACING = 8.0;
         const SCENE_FLOOR_Y = 18; 
