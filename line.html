@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 动态折线数据可视化 - 终极星系版 (完整UI)</title>
+    <title>3D 动态折线数据可视化 - 终极星系版 (完全体)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -23,33 +23,37 @@
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 10px; }
         
+        /* 初始加载层样式 */
         #loading-screen {
             position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #6366f1; font-weight: bold; letter-spacing: 0.2em;
             transition: opacity 0.5s ease;
+            pointer-events: none; /* 关键：防止遮挡交互 */
         }
+        
         input[type="range"] { accent-color: #6366f1; }
     </style>
 
     <script type="importmap">
     {
       "imports": {
-        "react": "https://esm.sh/react@19.0.0",
-        "react-dom": "https://esm.sh/react-dom@19.0.0",
-        "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-        "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
         "three": "https://esm.sh/three@0.160.0",
-        "three/examples/jsm/loaders/EXRLoader": "https://esm.sh/three@0.160.0/examples/jsm/loaders/EXRLoader",
-        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.14?external=react,react-dom,three",
-        "@react-three/drei": "https://esm.sh/@react-three/drei@9.96.1?external=react,react-dom,three,@react-three/fiber",
-        "lucide-react": "https://esm.sh/lucide-react@0.475.0?external=react"
+        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.16?external=react,react-dom,three",
+        "@react-three/drei": "https://esm.sh/@react-three/drei@9.99.0?external=react,react-dom,three,@react-three/fiber",
+        "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react",
+        "uuid": "https://esm.sh/uuid@9.0.1"
       }
     }
     </script>
 </head>
 <body>
-    <div id="loading-screen">SYSTEM INITIALIZING...</div>
+    <div id="loading-screen">
+        <div>SYSTEM INITIALIZING...</div>
+    </div>
     
     <div id="root"></div>
 
@@ -73,7 +77,6 @@
           Float,
           BakeShadows,
           Stars,
-          Grid,
           Sparkles,
           Line
         } from '@react-three/drei';
@@ -82,17 +85,17 @@
           Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, Activity, MoveUp, TrendingUp
         } from 'lucide-react';
 
-        // --- Loading Logic ---
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) {
-            setTimeout(() => {
-                loadingScreen.style.opacity = '0';
-                setTimeout(() => loadingScreen.remove(), 500);
-            }, 1000);
-        }
+        // --- 安全措施：强制移除 Loading 动画，防止卡死 ---
+        setTimeout(() => {
+            const ls = document.getElementById('loading-screen');
+            if (ls) {
+                ls.style.opacity = '0';
+                setTimeout(() => ls.remove(), 500);
+            }
+        }, 1500);
 
         // ==========================================
-        // 全局配置与数据
+        // 1. 全局配置 (Global Configuration)
         // ==========================================
         const CONFIG = {
           "ui": {
@@ -104,7 +107,7 @@
             "axisY": "GDP 总值"
           },
           "data": [
-            { "id": "1", "name": "中国", "value": 222744, "color": "#ff3e3e", "flag": "🇨🇳" },
+            { "id": "1", "name": "中国", "value": 18744, "color": "#ff3e3e", "flag": "🇨🇳" },
             { "id": "2", "name": "日本", "value": 4026, "color": "#ff5e5e", "flag": "🇯🇵" },
             { "id": "3", "name": "印度", "value": 3913, "color": "#ff9f43", "flag": "🇮🇳" },
             { "id": "4", "name": "韩国", "value": 1713, "color": "#feca57", "flag": "🇰🇷" },
@@ -120,7 +123,7 @@
         const SCALE_FACTOR = 0.0006;
         const BAR_SPACING = 8.0;
         const SCENE_FLOOR_Y = 18; 
-        const TARGET_VISUAL_HEIGHT = 60; // 目标视觉高度
+        const TARGET_VISUAL_HEIGHT = 60; // 目标视觉高度 (黄金比例)
 
         const CameraView = {
           FREE: 'FREE',
@@ -128,13 +131,16 @@
           FRONT: 'FRONT'
         };
 
+        // ==========================================
+        // 2. 3D 场景组件 (3D Components)
+        // ==========================================
+
         // --- 背景组件 ---
         const DeepSpaceGalaxy = () => {
           const groupRef = useRef(null);
           useFrame((state) => {
             if (groupRef.current) {
               groupRef.current.rotation.y = state.clock.elapsedTime * 0.01;
-              groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.05) * 0.1;
             }
           });
           return (
@@ -160,7 +166,8 @@
           if (!show) return null;
 
           const maxValue = data[data.length - 1].value;
-          // 智能步长逻辑
+          
+          // 智能步长逻辑：根据数据量级自动决定刻度
           let step = 1000;
           if (maxValue > 50000) step = 10000;
           else if (maxValue > 10000) step = 5000;
@@ -169,9 +176,7 @@
 
           const count = Math.ceil(maxValue / step);
           const totalWidth = (data.length - 1) * BAR_SPACING;
-          const startX = -totalWidth / 2;
-          const endX = totalWidth / 2;
-
+          
           const lines = [];
           for (let i = 1; i <= count; i++) {
              lines.push(i * step);
@@ -184,7 +189,7 @@
                 return (
                   <group key={val} position={[0, yPos, 0]}>
                     <Line 
-                      points={[[startX - 5, 0, 0], [endX + 5, 0, 0]]} 
+                      points={[[-totalWidth/2 - 5, 0, 0], [totalWidth/2 + 5, 0, 0]]} 
                       color="#6366f1" 
                       opacity={0.15} 
                       transparent 
@@ -194,7 +199,7 @@
                       gapSize={1}
                       lineWidth={1} 
                     />
-                    <Billboard position={[startX - 8, 0, 0]}>
+                    <Billboard position={[-totalWidth/2 - 8, 0, 0]}>
                       <Text 
                         fontSize={1.2} 
                         color="#818cf8" 
@@ -205,7 +210,7 @@
                         {val.toLocaleString()}
                       </Text>
                     </Billboard>
-                    <mesh position={[startX - 5, 0, 0]}>
+                    <mesh position={[-totalWidth/2 - 5, 0, 0]}>
                       <sphereGeometry args={[0.1, 8, 8]} />
                       <meshBasicMaterial color="#6366f1" opacity={0.5} transparent />
                     </mesh>
@@ -216,10 +221,11 @@
           )
         };
 
-        // --- 核心组件：LineNode ---
+        // --- 核心折线节点组件 ---
         const LineNode = ({ item, prevItem, index, total, progress, active, thickness, labelOffset, steepness }) => {
           const growth = Math.max(0, Math.min(1, progress - index));
           
+          // 计算高度时应用 steepness
           const targetY = item.value * SCALE_FACTOR * steepness;
           const xPos = (index * BAR_SPACING) - ((total - 1) * BAR_SPACING / 2);
           
@@ -231,6 +237,8 @@
             
             const start = new THREE.Vector3(prevX, prevY, 0);
             const end = new THREE.Vector3(xPos, targetY, 0);
+            
+            // 连线生长动画
             const currentEnd = start.clone().lerpVectors(start, end, growth); 
             const direction = new THREE.Vector3().subVectors(currentEnd, start);
             const length = direction.length();
@@ -248,6 +256,7 @@
           const sphereRef = useRef();
           useFrame((state) => {
             if (sphereRef.current) {
+               // 激活状态时的呼吸效果
                const pulse = active ? 1 + Math.sin(state.clock.elapsedTime * 8) * 0.1 : 1;
                sphereRef.current.scale.setScalar(pulse);
             }
@@ -255,22 +264,36 @@
 
           return (
             <group>
-              {/* 连线 */}
+              {/* 1. 连线 (Cylinder) */}
               {segment && (
                 <mesh position={segment.midpoint} quaternion={segment.quaternion}>
                   <cylinderGeometry args={[thickness * 0.15, thickness * 0.15, segment.length, 8]} />
-                  <meshStandardMaterial color={item.color} emissive={item.color} emissiveIntensity={active ? 2 : 0.5} transparent opacity={0.8} />
+                  <meshStandardMaterial 
+                    color={item.color} 
+                    emissive={item.color} 
+                    emissiveIntensity={active ? 2 : 0.5} 
+                    transparent 
+                    opacity={0.8} 
+                  />
                 </mesh>
               )}
 
-              {/* 节点 */}
+              {/* 2. 数据节点 (Sphere) */}
               {growth > 0.01 && (
                 <group position={[xPos, targetY, 0]}>
+                  {/* 核心球体 */}
                   <mesh ref={sphereRef} scale={[thickness, thickness, thickness]}>
                     <sphereGeometry args={[0.4, 32, 32]} />
-                    <meshStandardMaterial color={item.color} emissive={item.color} emissiveIntensity={active ? 3 : 0.8} roughness={0.2} metalness={0.8} />
+                    <meshStandardMaterial 
+                      color={item.color} 
+                      emissive={item.color} 
+                      emissiveIntensity={active ? 3 : 0.8} 
+                      roughness={0.2} 
+                      metalness={0.8} 
+                    />
                   </mesh>
                   
+                  {/* 外发光光晕 */}
                   {active && (
                     <mesh>
                        <sphereGeometry args={[0.6 * thickness, 16, 16]} />
@@ -278,7 +301,7 @@
                     </mesh>
                   )}
 
-                  {/* 标签 */}
+                  {/* 3. 标签 (Billboard) */}
                   <Billboard position={[0, labelOffset, 0]}>
                     <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
                       <group scale={labelScale}>
@@ -294,6 +317,7 @@
                     </Float>
                   </Billboard>
                   
+                  {/* 垂直引导线 */}
                   <mesh position={[0, -targetY / 2, 0]}>
                       <cylinderGeometry args={[0.05, 0.05, targetY, 4]} />
                       <meshBasicMaterial color={item.color} transparent opacity={0.1} />
@@ -304,7 +328,7 @@
           );
         };
 
-        // --- 智能摄像机控制器 (防溢出版) ---
+        // --- 智能摄像机控制器 (包含防溢出算法) ---
         const CameraController = ({ view, progress, data, isPlaying, camAngle, camDistance, autoRotate, steepness }) => {
           const { camera, size } = useThree();
           const controlsRef = useRef(null);
@@ -329,7 +353,7 @@
             const xPosAtFocus = (currentActiveIdx * BAR_SPACING) - (totalWidth / 2);
 
             if (view === CameraView.CINEMATIC) {
-              // 智能防溢出：当高度过高时，稍微降低聚焦点比例，并后退
+              // 1. 动态焦点高度：如果太高，视觉重心略微下移，避免看脚底
               const focusRatio = heightAtFocus > 20 ? 0.45 : 0.5; 
               const focusCenterY = SCENE_FLOOR_Y + (heightAtFocus * focusRatio) + 3;
               const rad = ((camAngle + 30) * Math.PI) / 180;
@@ -338,10 +362,12 @@
               controls.target.lerp(lookAtTarget, 0.08);
 
               if (isPlaying || progress < total) {
-                // 动态距离补偿
+                // *** 核心算法：智能防溢出 ***
+                // 随着高度增加，自动后退 (Zoom Out)
                 const dynamicZoomOut = Math.max(0, (heightAtFocus - 15) * 1.0); 
                 const activeDistance = camDistance + dynamicZoomOut;
-                // 动态高度补偿 (升空)
+                
+                // 随着高度增加，自动升空 (Lift)
                 const dynamicHeightLift = Math.max(0, (heightAtFocus - 10) * 0.35);
 
                 targetPos.set(
@@ -349,6 +375,7 @@
                   focusCenterY + 4 + dynamicHeightLift,
                   Math.cos(rad) * activeDistance
                 );
+                
                 camera.position.lerp(targetPos, 0.04);
               }
               controls.update();
@@ -357,6 +384,7 @@
               const fovRad = camera.fov * (Math.PI / 180);
               const aspect = size.width / size.height;
               
+              // 自动适应屏幕的算法
               const contentHeight = maxHeight * 1.1 + 10; 
               const contentWidth = totalWidth * 1.1 + 15;
               
@@ -407,6 +435,7 @@
 
               <group position={[0, SCENE_FLOOR_Y, 0]}>
                 <ContactShadows opacity={0.7} scale={400} blur={2.5} far={40} resolution={1024} color="#000" position={[0, -0.01, 0]} />
+                
                 {props.data.map((item, idx) => (
                   <LineNode 
                     key={item.id} 
@@ -427,7 +456,9 @@
           );
         };
 
-        // --- 完整豪华版 ControlsUI ---
+        // ==========================================
+        // 3. UI 控制面板 (完整豪华版)
+        // ==========================================
         const ControlsUI = (props) => {
           const [showSettings, setShowSettings] = useState(false);
           const progressPercent = Math.min(100, Math.round((props.progress / props.maxProgress) * 100));
@@ -436,7 +467,7 @@
           return (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl flex flex-col items-center bg-zinc-950/80 backdrop-blur-3xl border border-white/5 shadow-[0_35px_60px_-15px_rgba(0,0,0,1)] rounded-[2.5rem] overflow-visible transition-all">
               
-              {/* 进度条 */}
+              {/* 顶部进度条 */}
               <div className="w-[calc(100%-4rem)] h-1 bg-white/5 relative group cursor-pointer overflow-hidden mt-5 rounded-full">
                 <div 
                   className="absolute left-0 top-0 h-full bg-indigo-500 z-10 shadow-[0_0_15px_rgba(99,102,241,0.8)]" 
@@ -449,6 +480,7 @@
                 />
               </div>
 
+              {/* 主控制栏 */}
               <div className="w-full px-8 py-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <button 
@@ -466,7 +498,7 @@
                 </div>
 
                 <div className="flex items-center flex-grow justify-center gap-4">
-                  {/* 排名信息面板 */}
+                  {/* 左侧：排名显示面板 */}
                   <div className="hidden sm:flex items-center px-4 border-r border-white/10 group min-w-[180px]">
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
@@ -481,7 +513,7 @@
                     </div>
                   </div>
 
-                  {/* 视角切换 */}
+                  {/* 中间：视角切换 */}
                   <div className="flex bg-black/50 p-1.5 rounded-2xl border border-white/5">
                     {[ 
                       { id: CameraView.CINEMATIC, icon: <Camera size={13} />, label: '影院' }, 
@@ -499,6 +531,7 @@
                   </div>
                 </div>
 
+                {/* 右侧：设置按钮 */}
                 <div className="flex items-center gap-4 relative">
                   <div className="hidden md:flex flex-col items-end">
                     <span className="text-[11px] font-black text-indigo-500 tabular-nums tracking-widest">{progressPercent}%</span>
@@ -515,7 +548,7 @@
                         <h3 className="text-[11px] font-black text-zinc-100 uppercase tracking-[0.2em]">系统调优</h3>
                       </div>
                       
-                      {/* 垂直陡峭度控制 */}
+                      {/* 垂直拉伸控制 */}
                       <div className="space-y-3">
                         <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
                           <span className="flex items-center gap-1"><TrendingUp size={11} /> 垂直拉伸 (Steepness)</span>
@@ -524,6 +557,7 @@
                         <input type="range" min="1.0" max="10.0" step="0.5" value={props.steepness} onChange={(e) => props.setSteepness(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
                       </div>
 
+                      {/* 播放速度 */}
                       <div className="space-y-3">
                         <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
                           <span>播放倍速</span>
@@ -532,6 +566,7 @@
                         <input type="range" min="0.1" max="4.0" step="0.1" value={props.speed} onChange={(e) => props.setSpeed(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
                       </div>
 
+                      {/* 标签高度 */}
                       <div className="space-y-3">
                         <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
                           <span className="flex items-center gap-1"><MoveUp size={11} /> 标签高度</span>
@@ -540,14 +575,7 @@
                         <input type="range" min="0.5" max="8.0" step="0.1" value={props.labelOffset} onChange={(e) => props.setLabelOffset(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
                       </div>
 
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
-                          <span>观察距离</span>
-                          <span className="text-indigo-400">{props.distance}m</span>
-                        </div>
-                        <input type="range" min="10" max="150" step="1" value={props.distance} onChange={(e) => props.setDistance(parseInt(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
-                      </div>
-
+                      {/* 底部开关 */}
                       <div className="grid grid-cols-2 gap-3 pt-3">
                         <button 
                           onClick={() => props.setShowAxisLines(!props.showAxisLines)}
@@ -570,14 +598,18 @@
           );
         };
 
+        // ==========================================
+        // 4. 主程序入口 (App)
+        // ==========================================
         const App = () => {
           const sortedData = useMemo(() => [...CONFIG.data].sort((a, b) => a.value - b.value), []);
 
-          // --- 核心：初始化自适应计算 ---
+          // --- 核心：初始化自适应计算 (Steepness Calculation) ---
           const calculateAutoSteepness = () => {
               if (sortedData.length === 0) return 3.0;
               const maxVal = Math.max(...sortedData.map(d => d.value));
               const autoVal = TARGET_VISUAL_HEIGHT / (maxVal * SCALE_FACTOR);
+              // 限制在 1x 到 10x 之间，避免过扁或过高
               return Math.max(1.0, Math.min(10.0, autoVal));
           };
 
@@ -606,7 +638,7 @@
             setIsPlaying(true); 
             setView(CameraView.CINEMATIC); 
             setAutoRotate(true);
-            // 重置时也恢复最佳高度
+            // 重置时也恢复到最佳计算高度
             setSteepness(calculateAutoSteepness());
           };
 
@@ -618,6 +650,7 @@
                 const next = prev + (0.005 * playbackSpeed);
                 if (next >= maxProgress) { 
                   setIsPlaying(false); 
+                  // 播放结束后自动切换到全景模式
                   setTimeout(() => {
                      setView(v => v === CameraView.CINEMATIC ? CameraView.FRONT : v);
                      setAutoRotate(true);
@@ -660,7 +693,7 @@
                 </Canvas>
               </div>
 
-              {/* 标题 */}
+              {/* 标题界面 */}
               <div className="relative top-0 left-0 p-10 md:p-14 z-10 pointer-events-none w-full flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,1)] animate-pulse" />
@@ -696,7 +729,7 @@
                 />
               </div>
 
-              {/* 坐标轴标签 */}
+              {/* 左侧装饰性坐标轴 */}
               <div className="absolute top-1/2 left-10 -translate-y-1/2 flex flex-col gap-10 opacity-10 pointer-events-none hidden lg:flex">
                 <div className="flex flex-col gap-2">
                   <div className="w-16 h-0.5 bg-indigo-500" />
