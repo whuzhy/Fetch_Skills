@@ -179,3 +179,12 @@
 新增：op7418/Video-Wrapper-Skills (★123)
 --- 2026-01-30 13:33:55 ---
 
+[Major]
+新增：volcengine/OpenViking (★107)
+[Other]
+新增：huggingface/upskill (★166)
+新增：cisco-ai-defense/skill-scanner (★130)
+新增：luoluoluo22/jianying-editor-skill (★108)
+新增：PenglongHuang/chinese-novelist-skill (★106)
+--- 2026-01-31 13:10:21 ---
+
