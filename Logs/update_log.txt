@@ -188,3 +188,10 @@
 新增：PenglongHuang/chinese-novelist-skill (★106)
 --- 2026-01-31 13:10:21 ---
 
+[Major]
+新增：intellectronica/agent-skills (★165)
+新增：astronomer/agents (★115)
+[Other]
+新增：BankrBot/openclaw-skills (★125)
+--- 2026-02-01 13:49:29 ---
+
