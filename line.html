@@ -33,15 +33,15 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useRef, useMemo, useState, useEffect, Suspense } from 'react';
+        import React from 'react';
         import ReactDOM from 'react-dom/client';
+        import * as THREE from 'three';
         import { Canvas, useThree, useFrame } from '@react-three/fiber';
         import { 
           OrbitControls, PerspectiveCamera, Environment, PerformanceMonitor,
           AdaptiveDpr, AdaptiveEvents, Text, Billboard, ContactShadows,
           Float, BakeShadows, Stars, Sparkles, Line
         } from '@react-three/drei';
-        import * as THREE from 'three';
         import { 
           Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, Activity, MoveUp, TrendingUp, BarChart3
         } from 'lucide-react';
