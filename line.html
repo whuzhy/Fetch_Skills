@@ -3,32 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 智能折线图 - 终极星系完全体 (焦点修复版)</title>
-    
+    <title>3D 智能折线图 - 稳定修复版</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-
-    <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #000000; font-family: 'Inter', sans-serif; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        #loading-screen {
-            position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #6366f1; font-weight: bold; letter-spacing: 0.2em;
-            transition: opacity 0.5s ease; pointer-events: none;
-        }
-        input[type="range"] { accent-color: #6366f1; }
-    </style>
 
     <script type="importmap">
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
         "three": "https://esm.sh/three@0.150.0",
-        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.10.0?deps=three@0.150.0",
-        "@react-three/drei": "https://esm.sh/@react-three/drei@9.57.0?deps=three@0.150.0,react@18.2.0,react-dom@18.2.0",
+        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.10.0?deps=react@18.2.0,three@0.150.0",
+        "@react-three/drei": "https://esm.sh/@react-three/drei@9.57.0?deps=react@18.2.0,react-dom@18.2.0,three@0.150.0",
         "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react"
       }
     }
