@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 动态柱状图 - 终极星系版 (完全展开无删减)</title>
+    <title>3D 动态柱状图 - 终极星系版</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
         body {
@@ -23,13 +21,12 @@
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 10px; }
         
-        /* 初始加载层样式 */
         #loading-screen {
             position: fixed; inset: 0; background: #000; z-index: 9999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #6366f1; font-weight: bold; letter-spacing: 0.2em;
             transition: opacity 0.5s ease;
-            pointer-events: none; /* 关键：防止遮挡交互 */
+            pointer-events: none;
         }
         
         input[type="range"] { accent-color: #6366f1; }
@@ -44,8 +41,7 @@
         "three": "https://esm.sh/three@0.160.0",
         "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.16?external=react,react-dom,three",
         "@react-three/drei": "https://esm.sh/@react-three/drei@9.99.0?external=react,react-dom,three,@react-three/fiber",
-        "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react",
-        "uuid": "https://esm.sh/uuid@9.0.1"
+        "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react"
       }
     }
     </script>
@@ -57,10 +53,7 @@
     
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module" data-presets="react">
-        /** @jsx React.createElement */
-        /** @jsxFrag React.Fragment */
-
+    <script type="module">
         import React, { useRef, useMemo, useState, useEffect, Suspense } from 'react';
         import ReactDOM from 'react-dom/client';
         import { Canvas, useThree, useFrame } from '@react-three/fiber';
@@ -85,7 +78,6 @@
           Play, Pause, RotateCcw, Monitor, Camera, MousePointer2, Settings2, X, Activity, MoveUp, TrendingUp, BarChart3
         } from 'lucide-react';
 
-        // --- 安全措施：强制移除 Loading 动画 ---
         setTimeout(() => {
             const ls = document.getElementById('loading-screen');
             if (ls) {
@@ -95,7 +87,7 @@
         }, 1500);
 
         // ==========================================
-        // 1. 全局配置 (Global Configuration)
+        // 1. 全局配置
         // ==========================================
         const CONFIG = {
           "ui": {
@@ -123,7 +115,7 @@
         const SCALE_FACTOR = 0.0006;
         const BAR_SPACING = 8.0;
         const SCENE_FLOOR_Y = 18; 
-        const TARGET_VISUAL_HEIGHT = 60; // 黄金视觉高度
+        const TARGET_VISUAL_HEIGHT = 60;
 
         const CameraView = {
           FREE: 'FREE',
@@ -132,10 +124,9 @@
         };
 
         // ==========================================
-        // 2. 3D 场景组件 (3D Components)
+        // 2. 3D 场景组件
         // ==========================================
 
-        // --- 星座连线特效 (保留自原 Bars 版本) ---
         const Constellations = () => {
           const lineGeom = useMemo(() => {
             const points = [];
@@ -155,10 +146,17 @@
             }
             return new THREE.BufferGeometry().setFromPoints(points);
           }, []);
-          return <lineSegments geometry={lineGeom}><lineBasicMaterial color="#6366f1" transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false} /></lineSegments>;
+          return React.createElement('lineSegments', { geometry: lineGeom },
+            React.createElement('lineBasicMaterial', { 
+              color: "#6366f1", 
+              transparent: true, 
+              opacity: 0.05, 
+              blending: THREE.AdditiveBlending, 
+              depthWrite: false 
+            })
+          );
         };
 
-        // --- 背景组件 ---
         const DeepSpaceGalaxy = () => {
           const groupRef = useRef(null);
           useFrame((state) => {
@@ -166,32 +164,28 @@
               groupRef.current.rotation.y = state.clock.elapsedTime * 0.01;
             }
           });
-          return (
-            <group ref={groupRef}>
-              <Stars radius={400} depth={50} count={6000} factor={1.5} saturation={0} fade speed={0.05} />
-              <Sparkles count={35} scale={600} size={45} speed={0.1} opacity={0.3} color="#1e3a8a" />
-              <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
-                <group position={[150, 80, -500]}>
-                   <mesh scale={[180, 180, 180]}>
-                     <sphereGeometry args={[1, 32, 32]} />
-                     <meshBasicMaterial color="#4338ca" transparent opacity={0.15} blending={THREE.AdditiveBlending} />
-                   </mesh>
-                   <pointLight intensity={80} distance={2000} color="#818cf8" />
-                </group>
-              </Float>
-              <Sparkles count={50} scale={[800, 50, 800]} size={3} speed={0.3} opacity={0.4} color="#ffffff" />
-              <Constellations /> {/* 柱状图专属背景 */}
-            </group>
+          return React.createElement('group', { ref: groupRef },
+            React.createElement(Stars, { radius: 400, depth: 50, count: 6000, factor: 1.5, saturation: 0, fade: true, speed: 0.05 }),
+            React.createElement(Sparkles, { count: 35, scale: 600, size: 45, speed: 0.1, opacity: 0.3, color: "#1e3a8a" }),
+            React.createElement(Float, { speed: 2, rotationIntensity: 0.2, floatIntensity: 0.5 },
+              React.createElement('group', { position: [150, 80, -500] },
+                React.createElement('mesh', { scale: [180, 180, 180] },
+                  React.createElement('sphereGeometry', { args: [1, 32, 32] }),
+                  React.createElement('meshBasicMaterial', { color: "#4338ca", transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending })
+                ),
+                React.createElement('pointLight', { intensity: 80, distance: 2000, color: "#818cf8" })
+              )
+            ),
+            React.createElement(Sparkles, { count: 50, scale: [800, 50, 800], size: 3, speed: 0.3, opacity: 0.4, color: "#ffffff" }),
+            React.createElement(Constellations)
           );
         };
 
-        // --- 智能参考线网格 ---
         const AxisGrid = ({ data, steepness, show }) => {
           if (!show) return null;
 
           const maxValue = data[data.length - 1].value;
           
-          // 智能步长逻辑
           let step = 1000;
           if (maxValue > 50000) step = 10000;
           else if (maxValue > 10000) step = 5000;
@@ -206,42 +200,35 @@
              lines.push(i * step);
           }
 
-          return (
-            <group position={[0, 0, 0]}>
-              {lines.map((val) => {
-                const yPos = val * SCALE_FACTOR * steepness;
-                return (
-                  <group key={val} position={[0, yPos, 0]}>
-                    <Line 
-                      points={[[-totalWidth/2 - 5, 0, 0], [totalWidth/2 + 5, 0, 0]]} 
-                      color="#6366f1" 
-                      opacity={0.15} 
-                      transparent 
-                      dashed 
-                      dashScale={2}
-                      dashSize={1}
-                      gapSize={1}
-                      lineWidth={1} 
-                    />
-                    <Billboard position={[-totalWidth/2 - 8, 0, 0]}>
-                      <Text 
-                        fontSize={1.2} 
-                        color="#818cf8" 
-                        fillOpacity={0.5} 
-                        anchorX="right" 
-                        anchorY="middle"
-                      >
-                        {val.toLocaleString()}
-                      </Text>
-                    </Billboard>
-                  </group>
+          return React.createElement('group', { position: [0, 0, 0] },
+            lines.map((val) => {
+              const yPos = val * SCALE_FACTOR * steepness;
+              return React.createElement('group', { key: val, position: [0, yPos, 0] },
+                React.createElement(Line, { 
+                  points: [[-totalWidth/2 - 5, 0, 0], [totalWidth/2 + 5, 0, 0]], 
+                  color: "#6366f1", 
+                  opacity: 0.15, 
+                  transparent: true, 
+                  dashed: true, 
+                  dashScale: 2,
+                  dashSize: 1,
+                  gapSize: 1,
+                  lineWidth: 1 
+                }),
+                React.createElement(Billboard, { position: [-totalWidth/2 - 8, 0, 0] },
+                  React.createElement(Text, { 
+                    fontSize: 1.2, 
+                    color: "#818cf8", 
+                    fillOpacity: 0.5, 
+                    anchorX: "right", 
+                    anchorY: "middle"
+                  }, val.toLocaleString())
                 )
-              })}
-            </group>
-          )
+              );
+            })
+          );
         };
 
-        // --- 核心柱状节点组件 (BarNode) ---
         const BarNode = ({ item, index, total, progress, active, thickness, labelOffset, steepness }) => {
           const meshRef = useRef(null);
           const growth = Math.max(0, Math.min(1, progress - index));
@@ -249,7 +236,6 @@
           const labelOpacity = THREE.MathUtils.smoothstep(growth, 0, 0.2);
           const labelScale = THREE.MathUtils.lerp(0.6, 1, THREE.MathUtils.smoothstep(growth, 0, 0.3));
           
-          // 【核心逻辑】应用垂直拉伸 steepness
           const targetHeight = item.value * SCALE_FACTOR * steepness;
           const currentHeight = Math.max(0.1, targetHeight * growth);
           
@@ -259,53 +245,50 @@
           useFrame((state) => {
             if (meshRef.current) {
               const material = meshRef.current.material;
-              // 激活时的呼吸发光
               const pulse = active ? Math.sin(state.clock.elapsedTime * 6) * 0.2 + 0.3 : 0.05;
               material.emissiveIntensity = THREE.MathUtils.lerp(material.emissiveIntensity, pulse, 0.1);
             }
           });
 
-          return (
-            <group position={[xPos, 0, 0]}>
-              {/* 柱体 */}
-              <mesh 
-                ref={meshRef}
-                scale={[thickness, currentHeight, thickness]} 
-                position={[0, currentHeight / 2, 0]}
-                castShadow receiveShadow
-              >
-                <boxGeometry args={[3.5, 1, 3.5]} />
-                <meshStandardMaterial 
-                    color={item.color} 
-                    emissive={item.color} 
-                    emissiveIntensity={0.05} 
-                    roughness={0.1} 
-                    metalness={0.8} 
-                />
-              </mesh>
-
-              {/* 标签 */}
-              {growth > 0.01 && (
-                <Billboard position={[0, currentHeight + labelOffset, 0]}>
-                  <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.15}>
-                    <group scale={labelScale}>
-                      <Text position={[0, 2.5, 0]} fontSize={1.6} fillOpacity={labelOpacity} anchorX="center">{item.flag}</Text>
-                      <Text position={[0, 1.2, 0]} fontSize={0.6} fontWeight="bold" color="#ffffff" fillOpacity={labelOpacity} anchorX="center">{item.name}</Text>
-                      <Text position={[0, 0, 0]} fontSize={1.4} fontWeight="black" color={active ? "#ffffff" : item.color} fillOpacity={labelOpacity} anchorX="center">
-                        {(() => {
-                          const val = item.value * (growth > 0.9 ? 1 : growth);
-                          return Number.isInteger(val) ? Math.round(val).toLocaleString() : val.toFixed(0);
-                        })()}
-                      </Text>
-                    </group>
-                  </Float>
-                </Billboard>
-              )}
-            </group>
+          return React.createElement('group', { position: [xPos, 0, 0] },
+            React.createElement('mesh', { 
+              ref: meshRef,
+              scale: [thickness, currentHeight, thickness], 
+              position: [0, currentHeight / 2, 0],
+              castShadow: true,
+              receiveShadow: true
+            },
+              React.createElement('boxGeometry', { args: [3.5, 1, 3.5] }),
+              React.createElement('meshStandardMaterial', { 
+                color: item.color, 
+                emissive: item.color, 
+                emissiveIntensity: 0.05, 
+                roughness: 0.1, 
+                metalness: 0.8 
+              })
+            ),
+            growth > 0.01 && React.createElement(Billboard, { position: [0, currentHeight + labelOffset, 0] },
+              React.createElement(Float, { speed: 1.2, rotationIntensity: 0.1, floatIntensity: 0.15 },
+                React.createElement('group', { scale: labelScale },
+                  React.createElement(Text, { position: [0, 2.5, 0], fontSize: 1.6, fillOpacity: labelOpacity, anchorX: "center" }, item.flag),
+                  React.createElement(Text, { position: [0, 1.2, 0], fontSize: 0.6, fontWeight: "bold", color: "#ffffff", fillOpacity: labelOpacity, anchorX: "center" }, item.name),
+                  React.createElement(Text, { 
+                    position: [0, 0, 0], 
+                    fontSize: 1.4, 
+                    fontWeight: "black", 
+                    color: active ? "#ffffff" : item.color, 
+                    fillOpacity: labelOpacity, 
+                    anchorX: "center" 
+                  }, (() => {
+                    const val = item.value * (growth > 0.9 ? 1 : growth);
+                    return Number.isInteger(val) ? Math.round(val).toLocaleString() : val.toFixed(0);
+                  })())
+                )
+              )
+            )
           );
         };
 
-        // --- 智能摄像机控制器 (包含防溢出算法) ---
         const CameraController = ({ view, progress, data, isPlaying, camAngle, camDistance, autoRotate, steepness }) => {
           const { camera, size } = useThree();
           const controlsRef = useRef(null);
@@ -325,13 +308,11 @@
             const ceilIdx = Math.min(total - 1, floorIdx + 1);
             const alpha = currentActiveIdx - floorIdx;
             
-            // 计算当前焦点高度
             const currentVal = data[floorIdx].value + (data[ceilIdx].value - data[floorIdx].value) * alpha;
             const heightAtFocus = currentVal * SCALE_FACTOR * steepness;
             const xPosAtFocus = (currentActiveIdx * BAR_SPACING) - (totalWidth / 2);
 
             if (view === CameraView.CINEMATIC) {
-              // 1. 动态焦点高度：看柱子的中上部
               const focusCenterY = SCENE_FLOOR_Y + (heightAtFocus * 0.5) + 3;
               const rad = ((camAngle + 30) * Math.PI) / 180;
               
@@ -339,8 +320,6 @@
               controls.target.lerp(lookAtTarget, 0.08);
 
               if (isPlaying || progress < total) {
-                // *** 核心算法：智能防溢出 ***
-                // 柱子太高时，自动后退 (Zoom Out) + 升空 (Lift)
                 const dynamicZoomOut = Math.max(0, (heightAtFocus - 20) * 0.9); 
                 const activeDistance = camDistance + dynamicZoomOut;
                 const dynamicHeightLift = Math.max(0, (heightAtFocus - 15) * 0.3);
@@ -359,7 +338,6 @@
               const fovRad = camera.fov * (Math.PI / 180);
               const aspect = size.width / size.height;
               
-              // 自动适应屏幕的算法
               const contentHeight = maxHeight * 1.1 + 10; 
               const contentWidth = totalWidth * 1.1 + 15;
               
@@ -383,207 +361,237 @@
             }
           });
 
-          return <OrbitControls ref={controlsRef} makeDefault enableDamping dampingFactor={0.05} minDistance={5} maxDistance={2500} maxPolarAngle={Math.PI / 2.02} />;
+          return React.createElement(OrbitControls, { 
+            ref: controlsRef, 
+            makeDefault: true, 
+            enableDamping: true, 
+            dampingFactor: 0.05, 
+            minDistance: 5, 
+            maxDistance: 2500, 
+            maxPolarAngle: Math.PI / 2.02 
+          });
         };
 
         const SceneContent = (props) => {
           const activeIndex = Math.floor(props.progress);
 
-          return (
-            <React.Fragment>
-              <color attach="background" args={['#000000']} />
-              <Suspense fallback={null}><Environment preset="night" /></Suspense>
-              <DeepSpaceGalaxy />
-              <fog attach="fog" args={['#000000', 100, 2000]} />
-              
-              {/* 参考线网格 */}
-              <group position={[0, SCENE_FLOOR_Y, 0]}>
-                <AxisGrid data={props.data} steepness={props.steepness} show={props.showAxisLines} />
-              </group>
+          return React.createElement(React.Fragment, null,
+            React.createElement('color', { attach: "background", args: ['#000000'] }),
+            React.createElement(Suspense, { fallback: null }, React.createElement(Environment, { preset: "night" })),
+            React.createElement(DeepSpaceGalaxy),
+            React.createElement('fog', { attach: "fog", args: ['#000000', 100, 2000] }),
+            
+            React.createElement('group', { position: [0, SCENE_FLOOR_Y, 0] },
+              React.createElement(AxisGrid, { data: props.data, steepness: props.steepness, show: props.showAxisLines })
+            ),
 
-              <PerspectiveCamera makeDefault position={[0, 60, 200]} fov={30} />
-              <CameraController {...props} />
-              
-              <directionalLight position={[100, 100, 100]} intensity={1.5} />
-              <spotLight position={[-50, 150, 50]} intensity={3} angle={0.3} penumbra={1} castShadow />
-              <ambientLight intensity={0.4} />
+            React.createElement(PerspectiveCamera, { makeDefault: true, position: [0, 60, 200], fov: 30 }),
+            React.createElement(CameraController, { ...props }),
+            
+            React.createElement('directionalLight', { position: [100, 100, 100], intensity: 1.5 }),
+            React.createElement('spotLight', { position: [-50, 150, 50], intensity: 3, angle: 0.3, penumbra: 1, castShadow: true }),
+            React.createElement('ambientLight', { intensity: 0.4 }),
 
-              <group position={[0, SCENE_FLOOR_Y, 0]}>
-                <ContactShadows opacity={0.7} scale={400} blur={2.5} far={40} resolution={1024} color="#000" position={[0, -0.01, 0]} />
-                
-                {props.data.map((item, idx) => (
-                  <BarNode 
-                    key={item.id} 
-                    item={item} 
-                    index={idx} 
-                    total={props.data.length} 
-                    progress={props.progress} 
-                    active={activeIndex === idx} 
-                    thickness={props.thickness}
-                    labelOffset={props.labelOffset}
-                    steepness={props.steepness} 
-                  />
-                ))}
-              </group>
-              <BakeShadows />
-            </React.Fragment>
+            React.createElement('group', { position: [0, SCENE_FLOOR_Y, 0] },
+              React.createElement(ContactShadows, { opacity: 0.7, scale: 400, blur: 2.5, far: 40, resolution: 1024, color: "#000", position: [0, -0.01, 0] }),
+              
+              props.data.map((item, idx) => 
+                React.createElement(BarNode, { 
+                  key: item.id, 
+                  item: item, 
+                  index: idx, 
+                  total: props.data.length, 
+                  progress: props.progress, 
+                  active: activeIndex === idx, 
+                  thickness: props.thickness,
+                  labelOffset: props.labelOffset,
+                  steepness: props.steepness 
+                })
+              )
+            ),
+            React.createElement(BakeShadows)
           );
         };
 
         // ==========================================
-        // 3. UI 控制面板 (完整豪华版)
+        // 3. UI 控制面板
         // ==========================================
         const ControlsUI = (props) => {
           const [showSettings, setShowSettings] = useState(false);
           const progressPercent = Math.min(100, Math.round((props.progress / props.maxProgress) * 100));
           const currentRank = props.totalItems - Math.min(props.totalItems - 1, props.currentIndex);
 
-          return (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl flex flex-col items-center bg-zinc-950/80 backdrop-blur-3xl border border-white/5 shadow-[0_35px_60px_-15px_rgba(0,0,0,1)] rounded-[2.5rem] overflow-visible transition-all">
-              
-              {/* 顶部进度条 */}
-              <div className="w-[calc(100%-4rem)] h-1 bg-white/5 relative group cursor-pointer overflow-hidden mt-5 rounded-full">
-                <div 
-                  className="absolute left-0 top-0 h-full bg-indigo-500 z-10 shadow-[0_0_15px_rgba(99,102,241,0.8)]" 
-                  style={{ width: `${(props.progress / props.maxProgress) * 100}%` }} 
-                />
-                <input 
-                  type="range" min="0" max={props.maxProgress} step="0.0001" value={props.progress} 
-                  onChange={(e) => { props.setProgress(parseFloat(e.target.value)); props.setIsPlaying(false); }} 
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" 
-                />
-              </div>
+          return React.createElement('div', { 
+            className: "absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl flex flex-col items-center bg-zinc-950/80 backdrop-blur-3xl border border-white/5 shadow-[0_35px_60px_-15px_rgba(0,0,0,1)] rounded-[2.5rem] overflow-visible transition-all" 
+          },
+            React.createElement('div', { 
+              className: "w-[calc(100%-4rem)] h-1 bg-white/5 relative group cursor-pointer overflow-hidden mt-5 rounded-full" 
+            },
+              React.createElement('div', { 
+                className: "absolute left-0 top-0 h-full bg-indigo-500 z-10 shadow-[0_0_15px_rgba(99,102,241,0.8)]", 
+                style: { width: `${(props.progress / props.maxProgress) * 100}%` } 
+              }),
+              React.createElement('input', { 
+                type: "range", 
+                min: "0", 
+                max: props.maxProgress, 
+                step: "0.0001", 
+                value: props.progress, 
+                onChange: (e) => { 
+                  props.setProgress(parseFloat(e.target.value)); 
+                  props.setIsPlaying(false); 
+                }, 
+                className: "absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" 
+              })
+            ),
 
-              {/* 主控制栏 */}
-              <div className="w-full px-8 py-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => { if (props.progress >= props.maxProgress - 0.05) props.onReset(); else props.setIsPlaying(!props.isPlaying); }} 
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 ${props.isPlaying ? 'bg-white text-black' : 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20'}`}
-                  >
-                    {props.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
-                  </button>
-                  <button 
-                    onClick={props.onReset} 
-                    className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    <RotateCcw size={16} />
-                  </button>
-                </div>
+            React.createElement('div', { className: "w-full px-8 py-4 flex items-center justify-between gap-3" },
+              React.createElement('div', { className: "flex items-center gap-3" },
+                React.createElement('button', { 
+                  onClick: () => { 
+                    if (props.progress >= props.maxProgress - 0.05) props.onReset(); 
+                    else props.setIsPlaying(!props.isPlaying); 
+                  }, 
+                  className: `w-10 h-10 rounded-full flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 ${props.isPlaying ? 'bg-white text-black' : 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20'}` 
+                },
+                  props.isPlaying ? React.createElement(Pause, { size: 20, fill: "currentColor" }) : React.createElement(Play, { size: 20, fill: "currentColor", className: "ml-0.5" })
+                ),
+                React.createElement('button', { 
+                  onClick: props.onReset, 
+                  className: "w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 rounded-full transition-colors" 
+                },
+                  React.createElement(RotateCcw, { size: 16 })
+                )
+              ),
 
-                <div className="flex items-center flex-grow justify-center gap-4">
-                  {/* 左侧：排名显示面板 */}
-                  <div className="hidden sm:flex items-center px-4 border-r border-white/10 group min-w-[180px]">
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black text-indigo-400 bg-indigo-400/10 px-1.5 py-0.5 rounded uppercase tracking-tighter">
-                          Rank {currentRank}
-                        </span>
-                        <span className="text-sm font-black text-white italic truncate max-w-[110px]">
-                          {props.currentItem?.name || 'End Sequence'}
-                        </span>
-                        {props.currentItem && <span className="text-lg leading-none">{props.currentItem.flag}</span>}
-                      </div>
-                    </div>
-                  </div>
+              React.createElement('div', { className: "flex items-center flex-grow justify-center gap-4" },
+                React.createElement('div', { className: "hidden sm:flex items-center px-4 border-r border-white/10 group min-w-[180px]" },
+                  React.createElement('div', { className: "flex flex-col" },
+                    React.createElement('div', { className: "flex items-center gap-2" },
+                      React.createElement('span', { className: "text-[9px] font-black text-indigo-400 bg-indigo-400/10 px-1.5 py-0.5 rounded uppercase tracking-tighter" }, `Rank ${currentRank}`),
+                      React.createElement('span', { className: "text-sm font-black text-white italic truncate max-w-[110px]" }, props.currentItem?.name || 'End Sequence'),
+                      props.currentItem && React.createElement('span', { className: "text-lg leading-none" }, props.currentItem.flag)
+                    )
+                  )
+                ),
 
-                  {/* 中间：视角切换 */}
-                  <div className="flex bg-black/50 p-1.5 rounded-2xl border border-white/5">
-                    {[ 
-                      { id: CameraView.CINEMATIC, icon: <Camera size={13} />, label: '影院' }, 
-                      { id: CameraView.FRONT, icon: <Monitor size={13} />, label: '全景' }, 
-                      { id: CameraView.FREE, icon: <MousePointer2 size={13} />, label: '自由' }
-                    ].map((v) => (
-                      <button 
-                        key={v.id} 
-                        onClick={() => props.setView(v.id)} 
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-wide transition-all ${props.view === v.id ? 'bg-indigo-100 text-indigo-950 shadow-lg' : 'text-zinc-500 hover:text-zinc-200'}`}
-                      >
-                        {v.icon}<span>{v.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                React.createElement('div', { className: "flex bg-black/50 p-1.5 rounded-2xl border border-white/5" },
+                  [
+                    { id: CameraView.CINEMATIC, icon: React.createElement(Camera, { size: 13 }), label: '影院' },
+                    { id: CameraView.FRONT, icon: React.createElement(Monitor, { size: 13 }), label: '全景' },
+                    { id: CameraView.FREE, icon: React.createElement(MousePointer2, { size: 13 }), label: '自由' }
+                  ].map((v) => 
+                    React.createElement('button', { 
+                      key: v.id, 
+                      onClick: () => props.setView(v.id), 
+                      className: `flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-wide transition-all ${props.view === v.id ? 'bg-indigo-100 text-indigo-950 shadow-lg' : 'text-zinc-500 hover:text-zinc-200'}` 
+                    },
+                      v.icon,
+                      React.createElement('span', null, v.label)
+                    )
+                  )
+                )
+              ),
 
-                {/* 右侧：设置按钮 */}
-                <div className="flex items-center gap-4 relative">
-                  <div className="hidden md:flex flex-col items-end">
-                    <span className="text-[11px] font-black text-indigo-500 tabular-nums tracking-widest">{progressPercent}%</span>
-                  </div>
-                  <button onClick={() => setShowSettings(!showSettings)} className={`w-9 h-9 rounded-full border border-white/10 flex items-center justify-center transition-all ${showSettings ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}>
-                    {showSettings ? <X size={18} /> : <Settings2 size={18} />}
-                  </button>
+              React.createElement('div', { className: "flex items-center gap-4 relative" },
+                React.createElement('div', { className: "hidden md:flex flex-col items-end" },
+                  React.createElement('span', { className: "text-[11px] font-black text-indigo-500 tabular-nums tracking-widest" }, `${progressPercent}%`)
+                ),
+                React.createElement('button', { 
+                  onClick: () => setShowSettings(!showSettings), 
+                  className: `w-9 h-9 rounded-full border border-white/10 flex items-center justify-center transition-all ${showSettings ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-zinc-500 hover:text-white hover:bg-white/5'}` 
+                },
+                  showSettings ? React.createElement(X, { size: 18 }) : React.createElement(Settings2, { size: 18 })
+                ),
 
-                  {/* 详细设置弹窗 */}
-                  {showSettings && (
-                    <div className="absolute bottom-[calc(100%+2rem)] right-0 w-80 bg-zinc-950/95 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_100px_rgba(0,0,0,1)] z-50 flex flex-col gap-5 animate-in fade-in zoom-in-95 slide-in-from-bottom-6 duration-300">
-                      <div className="flex items-center gap-2 border-b border-white/5 pb-3">
-                        <BarChart3 size={16} className="text-indigo-500" />
-                        <h3 className="text-[11px] font-black text-zinc-100 uppercase tracking-[0.2em]">系统调优</h3>
-                      </div>
-                      
-                      {/* 垂直拉伸控制 */}
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
-                          <span className="flex items-center gap-1"><TrendingUp size={11} /> 垂直拉伸 (Steepness)</span>
-                          <span className="text-indigo-400">{props.steepness.toFixed(1)}x</span>
-                        </div>
-                        <input type="range" min="1.0" max="10.0" step="0.5" value={props.steepness} onChange={(e) => props.setSteepness(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
-                      </div>
+                showSettings && React.createElement('div', { 
+                  className: "absolute bottom-[calc(100%+2rem)] right-0 w-80 bg-zinc-950/95 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_100px_rgba(0,0,0,1)] z-50 flex flex-col gap-5 animate-in fade-in zoom-in-95 slide-in-from-bottom-6 duration-300" 
+                },
+                  React.createElement('div', { className: "flex items-center gap-2 border-b border-white/5 pb-3" },
+                    React.createElement(BarChart3, { size: 16, className: "text-indigo-500" }),
+                    React.createElement('h3', { className: "text-[11px] font-black text-zinc-100 uppercase tracking-[0.2em]" }, "系统调优")
+                  ),
+                  
+                  React.createElement('div', { className: "space-y-3" },
+                    React.createElement('div', { className: "flex justify-between text-[9px] font-black uppercase text-zinc-500" },
+                      React.createElement('span', { className: "flex items-center gap-1" },
+                        React.createElement(TrendingUp, { size: 11 }),
+                        " 垂直拉伸 (Steepness)"
+                      ),
+                      React.createElement('span', { className: "text-indigo-400" }, `${props.steepness.toFixed(1)}x`)
+                    ),
+                    React.createElement('input', { 
+                      type: "range", 
+                      min: "1.0", 
+                      max: "10.0", 
+                      step: "0.5", 
+                      value: props.steepness, 
+                      onChange: (e) => props.setSteepness(parseFloat(e.target.value)), 
+                      className: "w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" 
+                    })
+                  ),
 
-                      {/* 播放速度 */}
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
-                          <span>播放倍速</span>
-                          <span className="text-indigo-400">{props.speed.toFixed(1)}x</span>
-                        </div>
-                        <input type="range" min="0.1" max="4.0" step="0.1" value={props.speed} onChange={(e) => props.setSpeed(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
-                      </div>
+                  React.createElement('div', { className: "space-y-3" },
+                    React.createElement('div', { className: "flex justify-between text-[9px] font-black uppercase text-zinc-500" },
+                      React.createElement('span', null, "播放倍速"),
+                      React.createElement('span', { className: "text-indigo-400" }, `${props.speed.toFixed(1)}x`)
+                    ),
+                    React.createElement('input', { 
+                      type: "range", 
+                      min: "0.1", 
+                      max: "4.0", 
+                      step: "0.1", 
+                      value: props.speed, 
+                      onChange: (e) => props.setSpeed(parseFloat(e.target.value)), 
+                      className: "w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" 
+                    })
+                  ),
 
-                      {/* 标签高度 */}
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500">
-                          <span className="flex items-center gap-1"><MoveUp size={11} /> 标签高度</span>
-                          <span className="text-indigo-400">{props.labelOffset.toFixed(1)}m</span>
-                        </div>
-                        <input type="range" min="0.5" max="8.0" step="0.1" value={props.labelOffset} onChange={(e) => props.setLabelOffset(parseFloat(e.target.value))} className="w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" />
-                      </div>
+                  React.createElement('div', { className: "space-y-3" },
+                    React.createElement('div', { className: "flex justify-between text-[9px] font-black uppercase text-zinc-500" },
+                      React.createElement('span', { className: "flex items-center gap-1" },
+                        React.createElement(MoveUp, { size: 11 }),
+                        " 标签高度"
+                      ),
+                      React.createElement('span', { className: "text-indigo-400" }, `${props.labelOffset.toFixed(1)}m`)
+                    ),
+                    React.createElement('input', { 
+                      type: "range", 
+                      min: "0.5", 
+                      max: "8.0", 
+                      step: "0.1", 
+                      value: props.labelOffset, 
+                      onChange: (e) => props.setLabelOffset(parseFloat(e.target.value)), 
+                      className: "w-full accent-indigo-500 h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer" 
+                    })
+                  ),
 
-                      {/* 底部开关 */}
-                      <div className="grid grid-cols-2 gap-3 pt-3">
-                        <button 
-                          onClick={() => props.setShowAxisLines(!props.showAxisLines)}
-                          className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all ${props.showAxisLines ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-inner' : 'bg-white/5 text-zinc-500'}`}
-                        >
-                          参考标线
-                        </button>
-                        <button 
-                          onClick={() => props.setAutoRotate(!props.autoRotate)}
-                          className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all ${props.autoRotate ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-inner' : 'bg-white/5 text-zinc-500'}`}
-                        >
-                          自动航行
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+                  React.createElement('div', { className: "grid grid-cols-2 gap-3 pt-3" },
+                    React.createElement('button', { 
+                      onClick: () => props.setShowAxisLines(!props.showAxisLines),
+                      className: `py-3 rounded-xl text-[9px] font-black uppercase transition-all ${props.showAxisLines ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-inner' : 'bg-white/5 text-zinc-500'}` 
+                    }, "参考标线"),
+                    React.createElement('button', { 
+                      onClick: () => props.setAutoRotate(!props.autoRotate),
+                      className: `py-3 rounded-xl text-[9px] font-black uppercase transition-all ${props.autoRotate ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-inner' : 'bg-white/5 text-zinc-500'}` 
+                    }, "自动航行")
+                  )
+                )
+              )
+            )
           );
         };
 
         // ==========================================
-        // 4. 主程序入口 (App)
+        // 4. 主程序入口
         // ==========================================
         const App = () => {
           const sortedData = useMemo(() => [...CONFIG.data].sort((a, b) => a.value - b.value), []);
 
-          // --- 核心：初始化自适应计算 (Steepness Calculation) ---
           const calculateAutoSteepness = () => {
               if (sortedData.length === 0) return 3.0;
               const maxVal = Math.max(...sortedData.map(d => d.value));
               const autoVal = TARGET_VISUAL_HEIGHT / (maxVal * SCALE_FACTOR);
-              // 限制在 1x 到 10x 之间，避免过扁或过高
               return Math.max(1.0, Math.min(10.0, autoVal));
           };
 
@@ -598,7 +606,6 @@
           const [labelOffset, setLabelOffset] = useState(2.2); 
           const [autoRotate, setAutoRotate] = useState(true); 
           
-          // 使用自适应值初始化 steepness
           const [steepness, setSteepness] = useState(calculateAutoSteepness());
           const [showAxisLines, setShowAxisLines] = useState(true);
 
@@ -612,7 +619,6 @@
             setIsPlaying(true); 
             setView(CameraView.CINEMATIC); 
             setAutoRotate(true);
-            // 重置时也恢复到最佳计算高度
             setSteepness(calculateAutoSteepness());
           };
 
@@ -624,7 +630,6 @@
                 const next = prev + (0.005 * playbackSpeed);
                 if (next >= maxProgress) { 
                   setIsPlaying(false); 
-                  // 播放结束后自动切换到全景模式
                   setTimeout(() => {
                      setView(v => v === CameraView.CINEMATIC ? CameraView.FRONT : v);
                      setAutoRotate(true);
@@ -639,88 +644,95 @@
             return () => cancelAnimationFrame(frameId);
           }, [isPlaying, maxProgress, playbackSpeed]);
 
-          return (
-            <div className="flex flex-col w-full h-[100dvh] bg-black text-white font-sans select-none overflow-hidden relative">
-              <div className="absolute inset-0 z-0">
-                <Canvas 
-                  shadows 
-                  gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
-                  camera={{ fov: 30, near: 0.1, far: 3000 }}
-                >
-                  <PerformanceMonitor />
-                  <AdaptiveDpr />
-                  <AdaptiveEvents />
-                  <SceneContent 
-                    data={sortedData} 
-                    progress={progress} 
-                    view={view} 
-                    isPlaying={isPlaying} 
-                    speed={playbackSpeed}
-                    camAngle={camAngle} 
-                    camDistance={camDistance}
-                    thickness={thickness}
-                    labelOffset={labelOffset}
-                    autoRotate={autoRotate}
-                    steepness={steepness}
-                    showAxisLines={showAxisLines}
-                  />
-                </Canvas>
-              </div>
+          return React.createElement('div', { 
+            className: "flex flex-col w-full h-[100dvh] bg-black text-white font-sans select-none overflow-hidden relative" 
+          },
+            React.createElement('div', { className: "absolute inset-0 z-0" },
+              React.createElement(Canvas, { 
+                shadows: true, 
+                gl: { antialias: true, toneMapping: THREE.ACESFilmicToneMapping },
+                camera: { fov: 30, near: 0.1, far: 3000 }
+              },
+                React.createElement(PerformanceMonitor),
+                React.createElement(AdaptiveDpr),
+                React.createElement(AdaptiveEvents),
+                React.createElement(SceneContent, { 
+                  data: sortedData, 
+                  progress: progress, 
+                  view: view, 
+                  isPlaying: isPlaying, 
+                  speed: playbackSpeed,
+                  camAngle: camAngle, 
+                  camDistance: camDistance,
+                  thickness: thickness,
+                  labelOffset: labelOffset,
+                  autoRotate: autoRotate,
+                  steepness: steepness,
+                  showAxisLines: showAxisLines
+                })
+              )
+            ),
 
-              {/* 标题界面 */}
-              <div className="relative top-0 left-0 p-10 md:p-14 z-10 pointer-events-none w-full flex flex-col gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,1)] animate-pulse" />
-                  <span className="text-[11px] font-black tracking-[0.8em] uppercase text-indigo-400/80">{CONFIG.ui.meta}</span>
-                </div>
-                <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none text-white drop-shadow-[0_15px_15px_rgba(0,0,0,0.9)]">
-                  {CONFIG.ui.title}
-                  {CONFIG.ui.unit && <span className="text-2xl md:text-3xl ml-4 opacity-70">({CONFIG.ui.unit})</span>}
-                </h1>
-                <p className="text-zinc-500 text-xs md:text-sm font-bold tracking-[0.3em] opacity-60 uppercase">
-                  {CONFIG.ui.subTitle}
-                </p>
-              </div>
+            React.createElement('div', { className: "relative top-0 left-0 p-10 md:p-14 z-10 pointer-events-none w-full flex flex-col gap-2" },
+              React.createElement('div', { className: "flex items-center gap-3" },
+                React.createElement('div', { className: "w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,1)] animate-pulse" }),
+                React.createElement('span', { className: "text-[11px] font-black tracking-[0.8em] uppercase text-indigo-400/80" }, CONFIG.ui.meta)
+              ),
+              React.createElement('h1', { className: "text-5xl md:text-7xl font-black tracking-tighter leading-none text-white drop-shadow-[0_15px_15px_rgba(0,0,0,0.9)]" },
+                CONFIG.ui.title,
+                CONFIG.ui.unit && React.createElement('span', { className: "text-2xl md:text-3xl ml-4 opacity-70" }, `(${CONFIG.ui.unit})`)
+              ),
+              React.createElement('p', { className: "text-zinc-500 text-xs md:text-sm font-bold tracking-[0.3em] opacity-60 uppercase" }, CONFIG.ui.subTitle)
+            ),
 
-              {/* 控制台 UI */}
-              <div className="z-30 pointer-events-auto">
-                <ControlsUI 
-                  isPlaying={isPlaying} setIsPlaying={setIsPlaying} 
-                  progress={progress} setProgress={setProgress} 
-                  maxProgress={maxProgress} view={view} setView={setView} 
-                  speed={playbackSpeed} setSpeed={setPlaybackSpeed} 
-                  angle={camAngle} setAngle={setCamAngle} 
-                  distance={camDistance} setDistance={setCamDistance} 
-                  thickness={thickness} setThickness={setThickness}
-                  labelOffset={labelOffset} setLabelOffset={setLabelOffset}
-                  autoRotate={autoRotate} setAutoRotate={setAutoRotate}
-                  steepness={steepness} setSteepness={setSteepness}
-                  showAxisLines={showAxisLines} setShowAxisLines={setShowAxisLines}
-                  onReset={handleReset}
-                  currentItem={currentItem}
-                  currentIndex={currentIndex}
-                  totalItems={totalItems}
-                />
-              </div>
+            React.createElement('div', { className: "z-30 pointer-events-auto" },
+              React.createElement(ControlsUI, { 
+                isPlaying: isPlaying, 
+                setIsPlaying: setIsPlaying, 
+                progress: progress, 
+                setProgress: setProgress, 
+                maxProgress: maxProgress, 
+                view: view, 
+                setView: setView, 
+                speed: playbackSpeed, 
+                setSpeed: setPlaybackSpeed, 
+                angle: camAngle, 
+                setAngle: setCamAngle, 
+                distance: camDistance, 
+                setDistance: setCamDistance, 
+                thickness: thickness, 
+                setThickness: setThickness,
+                labelOffset: labelOffset, 
+                setLabelOffset: setLabelOffset,
+                autoRotate: autoRotate, 
+                setAutoRotate: setAutoRotate,
+                steepness: steepness, 
+                setSteepness: setSteepness,
+                showAxisLines: showAxisLines, 
+                setShowAxisLines: setShowAxisLines,
+                onReset: handleReset,
+                currentItem: currentItem,
+                currentIndex: currentIndex,
+                totalItems: totalItems
+              })
+            ),
 
-              {/* 左侧装饰性坐标轴 */}
-              <div className="absolute top-1/2 left-10 -translate-y-1/2 flex flex-col gap-10 opacity-10 pointer-events-none hidden lg:flex">
-                <div className="flex flex-col gap-2">
-                  <div className="w-16 h-0.5 bg-indigo-500" />
-                  <span className="text-[9px] font-bold tracking-widest uppercase">{CONFIG.ui.axisX}</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="w-16 h-0.5 bg-zinc-100" />
-                  <span className="text-[9px] font-bold tracking-widest uppercase">{CONFIG.ui.axisY}</span>
-                </div>
-              </div>
-            </div>
+            React.createElement('div', { className: "absolute top-1/2 left-10 -translate-y-1/2 flex flex-col gap-10 opacity-10 pointer-events-none hidden lg:flex" },
+              React.createElement('div', { className: "flex flex-col gap-2" },
+                React.createElement('div', { className: "w-16 h-0.5 bg-indigo-500" }),
+                React.createElement('span', { className: "text-[9px] font-bold tracking-widest uppercase" }, CONFIG.ui.axisX)
+              ),
+              React.createElement('div', { className: "flex flex-col gap-2" },
+                React.createElement('div', { className: "w-16 h-0.5 bg-zinc-100" }),
+                React.createElement('span', { className: "text-[9px] font-bold tracking-widest uppercase" }, CONFIG.ui.axisY)
+              )
+            )
           );
         };
 
         const rootElement = document.getElementById('root');
         if (rootElement) {
-          ReactDOM.createRoot(rootElement).render(<App />);
+          ReactDOM.createRoot(rootElement).render(React.createElement(App));
         }
     </script>
 </body>
