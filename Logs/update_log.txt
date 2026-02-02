@@ -195,3 +195,7 @@
 新增：BankrBot/openclaw-skills (★125)
 --- 2026-02-01 13:49:29 ---
 
+[Major]
+新增：kalil0321/reverse-api-engineer (★367)
+--- 2026-02-02 13:54:32 ---
+
