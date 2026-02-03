@@ -199,3 +199,10 @@
 新增：kalil0321/reverse-api-engineer (★367)
 --- 2026-02-02 13:54:32 ---
 
+[Major]
+新增：getsentry/skills (★171)
+新增：aitytech/agentkits-marketing (★170)
+[Other]
+新增：rookie-ricardo/erduo-skills (★261)
+--- 2026-02-03 13:37:56 ---
+
