@@ -206,3 +206,8 @@
 新增：rookie-ricardo/erduo-skills (★261)
 --- 2026-02-03 13:37:56 ---
 
+[Major] 新增：assafelovic/skyll (★140)
+[Major] 新增：tech-leads-club/agent-skills (★374)
+[Major] 新增：yunshu0909/yunshu_skillshub (★109)
+[Other] 新增：ConardLi/rag-skill (★113)
+
