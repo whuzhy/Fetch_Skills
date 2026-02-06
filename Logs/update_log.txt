@@ -211,3 +211,5 @@
 [Major] 新增：yunshu0909/yunshu_skillshub (★109)
 [Other] 新增：ConardLi/rag-skill (★113)
 
+[Major] 新增：agentskills/agentskills (★9047)
+
