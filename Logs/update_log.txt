@@ -213,3 +213,6 @@
 
 [Major] 新增：agentskills/agentskills (★9047)
 
+[Major] 新增：dbt-labs/dbt-agent-skills (★103)
+[Major] 新增：jMerta/codex-skills (★108)
+
