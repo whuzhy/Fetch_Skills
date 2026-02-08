@@ -216,3 +216,6 @@
 [Major] 新增：dbt-labs/dbt-agent-skills (★103)
 [Major] 新增：jMerta/codex-skills (★108)
 
+[Major] 新增：polyuiislab/infiAgent (★1034)
+[Major] 新增：johnrogers/claude-swift-engineering (★101)
+
