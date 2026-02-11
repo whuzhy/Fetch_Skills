@@ -222,3 +222,5 @@
 [Major] 新增：huggingface/upskill (★289)
 [Major] 新增：ninehills/skills (★105)
 
+[Major] 新增：EverMind-AI/EverMemOS (★2012)
+
