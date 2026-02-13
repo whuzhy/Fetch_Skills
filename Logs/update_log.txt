@@ -228,3 +228,8 @@
 [Other] 新增：PrefectHQ/colin (★101)
 [Other] 新增：juntoku9/claude-for-crypto-research (★101)
 
+[Major] 新增：zscole/model-hierarchy-skill (★210)
+[Major] 新增：AgriciDaniel/claude-seo (★121)
+[Other] 新增：sharbelxyz/x-bookmarks (★159)
+[Other] 新增：alirezarezvani/claude-code-aso-skill (★104)
+
