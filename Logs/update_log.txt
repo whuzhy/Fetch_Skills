@@ -233,3 +233,7 @@
 [Other] 新增：sharbelxyz/x-bookmarks (★159)
 [Other] 新增：alirezarezvani/claude-code-aso-skill (★104)
 
+[Major] 新增：MooseGoose0701/skill-compose (★154)
+[Major] 新增：elevenlabs/skills (★102)
+[Major] 新增：cnemri/google-genai-skills (★101)
+
