@@ -237,3 +237,9 @@
 [Major] 新增：elevenlabs/skills (★102)
 [Major] 新增：cnemri/google-genai-skills (★101)
 
+[Major] 新增：ReScienceLab/opc-skills (★143)
+[Major] 新增：AgriciDaniel/claude-ads (★107)
+[Major] 新增：oaustegard/claude-skills (★102)
+[Other] 新增：ed3dai/ed3d-plugins (★110)
+[Other] 新增：trailofbits/skills-curated (★105)
+
