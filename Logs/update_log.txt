@@ -243,3 +243,5 @@
 [Other] 新增：ed3dai/ed3d-plugins (★110)
 [Other] 新增：trailofbits/skills-curated (★105)
 
+[Major] 新增：openakita/openakita (★191)
+
