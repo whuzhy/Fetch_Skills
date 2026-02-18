@@ -245,3 +245,9 @@
 
 [Major] 新增：openakita/openakita (★191)
 
+[Major] 新增：ViktorAxelsen/MemSkill (★169)
+[Major] 新增：honnibal/claude-skills (★122)
+[Major] 新增：DougTrajano/pydantic-ai-skills (★101)
+[Major] 新增：giuseppe-trisciuoglio/developer-kit (★101)
+[Other] 新增：lawvable/awesome-legal-skills (★101)
+
