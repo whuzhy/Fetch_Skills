@@ -251,3 +251,9 @@
 [Major] 新增：giuseppe-trisciuoglio/developer-kit (★101)
 [Other] 新增：lawvable/awesome-legal-skills (★101)
 
+[Major] 新增：jezweb/claude-skills (★507)
+[Major] 新增：novotnyllc/dotnet-artisan (★123)
+[Other] 新增：anthropics/claude-plugins-official (★7610)
+[Other] 新增：ythx-101/x-tweet-fetcher (★115)
+[Other] 新增：chainstacklabs/polyclaw (★101)
+
