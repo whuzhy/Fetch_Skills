@@ -257,3 +257,8 @@
 [Other] 新增：ythx-101/x-tweet-fetcher (★115)
 [Other] 新增：chainstacklabs/polyclaw (★101)
 
+[Major] 新增：kangarooking/x-skills (★101)
+[Major] 新增：aiming-lab/SkillRL (★445)
+[Major] 新增：wlzh/skills (★164)
+[Major] 新增：Ibrahim-3d/conductor-orchestrator-superpowers (★112)
+
