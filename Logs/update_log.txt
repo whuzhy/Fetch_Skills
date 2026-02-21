@@ -262,3 +262,6 @@
 [Major] 新增：wlzh/skills (★164)
 [Major] 新增：Ibrahim-3d/conductor-orchestrator-superpowers (★112)
 
+[Major] 新增：posit-dev/skills (★117)
+[Other] 新增：sundial-org/awesome-openclaw-skills (★119)
+
