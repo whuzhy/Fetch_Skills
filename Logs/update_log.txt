@@ -265,3 +265,6 @@
 [Major] 新增：posit-dev/skills (★117)
 [Other] 新增：sundial-org/awesome-openclaw-skills (★119)
 
+[Other] 新增：NanmiCoder/skills-agent-proto (★104)
+[Other] 新增：yhslgg-arch/url-reader (★101)
+
