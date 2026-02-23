@@ -268,3 +268,5 @@
 [Other] 新增：NanmiCoder/skills-agent-proto (★104)
 [Other] 新增：yhslgg-arch/url-reader (★101)
 
+[Other] 新增：wwwzhouhui/skills_collection (★109)
+
