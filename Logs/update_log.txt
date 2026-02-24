@@ -270,3 +270,7 @@
 
 [Other] 新增：wwwzhouhui/skills_collection (★109)
 
+[Major] 新增：donghuixin/AI-Vibe-Writing-Skills (★218)
+[Major] 新增：Uniswap/uniswap-ai (★109)
+[Other] 新增：xiaotianfotos/skills (★145)
+
