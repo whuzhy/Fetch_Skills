@@ -274,3 +274,8 @@
 [Major] 新增：Uniswap/uniswap-ai (★109)
 [Other] 新增：xiaotianfotos/skills (★145)
 
+[Major] 新增：sanjay3290/ai-skills (★102)
+[Major] 新增：countbot-ai/CountBot (★112)
+[Other] 新增：Frankieli123/grok-skill (★101)
+[Other] 新增：PleasePrompto/google-ai-mode-skill (★101)
+
