@@ -279,3 +279,9 @@
 [Other] 新增：Frankieli123/grok-skill (★101)
 [Other] 新增：PleasePrompto/google-ai-mode-skill (★101)
 
+[Major] 新增：FireRedTeam/FireRed-OpenStoryline (★530)
+[Major] 新增：ATaC-team/ATaC (★110)
+[Major] 新增：jonathan-vella/azure-agentic-infraops (★104)
+[Other] 新增：aiskillstore/marketplace (★182)
+[Other] 新增：RuoJi6/java-audit-skills (★107)
+
