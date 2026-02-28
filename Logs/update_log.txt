@@ -285,3 +285,7 @@
 [Other] 新增：aiskillstore/marketplace (★182)
 [Other] 新增：RuoJi6/java-audit-skills (★107)
 
+[Major] 新增：chainstacklabs/polyclaw (★135)
+[Major] 新增：Jaganpro/sf-skills (★103)
+[Major] 新增：nj19257/FastSkills (★101)
+
