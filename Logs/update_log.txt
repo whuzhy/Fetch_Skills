@@ -289,3 +289,11 @@
 [Major] 新增：Jaganpro/sf-skills (★103)
 [Major] 新增：nj19257/FastSkills (★101)
 
+[Major] 新增：white0dew/XiaohongshuSkills (★595)
+[Major] 新增：blessonism/openclaw-search-skills (★129)
+[Major] 新增：poteto/brainmaxxing (★119)
+[Major] 新增：D1a0y1bb/CloverSec-CTF-Build-Dockerizer-skill (★103)
+[Major] 新增：Nikolay-Shirokov/cc-1c-skills (★101)
+[Other] 新增：datawhalechina/agent-skills-with-anthropic (★113)
+[Other] 新增：partme-ai/full-stack-skills (★102)
+
