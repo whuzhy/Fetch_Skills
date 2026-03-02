@@ -297,3 +297,7 @@
 [Other] 新增：datawhalechina/agent-skills-with-anthropic (★113)
 [Other] 新增：partme-ai/full-stack-skills (★102)
 
+[Major] 新增：cafe3310/public-agent-skills (★105)
+[Other] 新增：RKiding/Awesome-finance-skills (★233)
+[Other] 新增：dean9703111/ai-agent-skill-for-video-workflow (★101)
+
