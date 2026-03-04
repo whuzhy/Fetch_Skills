@@ -311,3 +311,10 @@
 [Other] 新增：coleam00/excalidraw-diagram-skill (★122)
 [Other] 新增：BND-1/wechat_article_skills (★105)
 
+[Major] 新增：arpitg1304/robotics-agent-skills (★115)
+[Major] 新增：mvanhorn/last30days-skill (★3361)
+[Major] 新增：ArtemXTech/personal-os-skills (★132)
+[Major] 新增：awesome-skills/code-review-skill (★103)
+[Major] 新增：majiayu000/claude-skill-registry (★101)
+[Major] 新增：Q00/ouroboros (★101)
+
