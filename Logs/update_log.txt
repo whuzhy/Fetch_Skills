@@ -325,3 +325,11 @@
 [Other] 新增：HughYau/AcademicForge (★268)
 [Other] 新增：jerry-ai-dev/MODULAR-RAG-MCP-SERVER (★109)
 
+[Major] 新增：xstongxue/best-skills (★214)
+[Major] 新增：luoluoluo22/jianying-editor-skill (★370)
+[Major] 新增：LabRAI/LangSkills (★124)
+[Major] 新增：zubair-trabzada/ai-marketing-claude (★123)
+[Major] 新增：UnrealXu/UnrealEngine5-Skills (★104)
+[Major] 新增：zubair-trabzada/geo-seo-claude (★101)
+[Other] 新增：marketingjuliancongdanh79-pixel/skill-generator (★139)
+
