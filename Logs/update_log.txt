@@ -333,3 +333,9 @@
 [Major] 新增：zubair-trabzada/geo-seo-claude (★101)
 [Other] 新增：marketingjuliancongdanh79-pixel/skill-generator (★139)
 
+[Major] 新增：xiaotianfotos/skills (★336)
+[Major] 新增：zjunlp/SkillNet (★111)
+[Major] 新增：bitget-wallet-ai-lab/bitget-wallet-skill (★104)
+[Major] 新增：autoclaw-cc/xiaohongshu-skills (★103)
+[Other] 新增：Weizhena/Deep-Research-skills (★103)
+
