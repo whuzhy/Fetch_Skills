@@ -339,3 +339,7 @@
 [Major] 新增：autoclaw-cc/xiaohongshu-skills (★103)
 [Other] 新增：Weizhena/Deep-Research-skills (★103)
 
+[Major] 新增：akin-ozer/cc-devops-skills (★102)
+[Major] 新增：Bhanunamikaze/Agentic-SEO-Skill (★102)
+[Other] 新增：tradermonty/claude-trading-skills (★146)
+
